@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>InventApp — Cinépolis</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap');
+:root {
+  --bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--surface3:#2a2f45;
+  --border:#2e3350;--accent:#4f7cff;--accent2:#38d9a9;--danger:#ff5c5c;
+  --warn:#ffb347;--text:#e8eaf6;--text2:#8b90b0;--text3:#5a5f7a;
+  --radius:14px;--radius-sm:8px;--shadow:0 4px 24px rgba(0,0,0,0.4);
+}
+.light-mode {
+  --bg:#f0f2f8;--surface:#ffffff;--surface2:#e8eaf6;--surface3:#dde0f0;
+  --border:#c8cce0;--text:#1a1d27;--text2:#5a5f7a;--text3:#8b90b0;
+  --shadow:0 4px 24px rgba(0,0,0,0.1);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background 0.3s,color 0.3s;}
+#login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 50% 0%,#1a2040 0%,#0f1117 70%);}
+.light-mode #login-screen{background:radial-gradient(ellipse at 50% 0%,#c8d4ff 0%,#f0f2f8 70%);}
+.login-logo{width:72px;height:72px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:24px;box-shadow:0 8px 32px rgba(79,124,255,0.3);}
+.login-title{font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--text),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;text-align:center;}
+.login-sub{color:var(--text2);font-size:14px;margin-bottom:40px;text-align:center;}
+.login-card{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);}
+.login-label{font-size:12px;font-weight:600;color:var(--text2);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;}
+.login-input{width:100%;padding:14px 16px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:16px;font-family:'DM Mono',monospace;outline:none;transition:border-color 0.2s;margin-bottom:20px;}
+.login-input:focus{border-color:var(--accent);}
+.btn-primary{width:100%;padding:15px;background:linear-gradient(135deg,var(--accent),#6b4fff);border:none;border-radius:var(--radius-sm);color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:opacity 0.2s,transform 0.1s;font-family:'DM Sans',sans-serif;}
+.btn-primary:active{transform:scale(0.98);opacity:0.9;}
+.login-error{background:rgba(255,92,92,0.1);border:1px solid rgba(255,92,92,0.3);border-radius:var(--radius-sm);color:var(--danger);font-size:13px;padding:10px 14px;margin-top:14px;display:none;text-align:center;}
+#app{display:none;min-height:100vh;}
+.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.header-left{display:flex;align-items:center;gap:10px;}
+.header-logo{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.header-title{font-size:16px;font-weight:700;}
+.header-sub{font-size:11px;color:var(--text2);}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--surface3);display:inline-block;margin-left:6px;vertical-align:middle;transition:background 0.3s;}
+.sync-dot.syncing{background:var(--warn);animation:blink 1s infinite;}
+.sync-dot.ok{background:var(--accent2);}
+.sync-dot.err{background:var(--danger);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.btn-icon{width:36px;height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:background 0.15s;user-select:none;}
+.btn-icon:active{background:var(--surface3);}
+.screen{display:none;padding:16px;max-width:680px;margin:0 auto;padding-bottom:90px;}
+.screen.active{display:block;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+.section-title{font-size:11px;font-weight:600;color:var(--text2);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px;}
+.subalmacen-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.subalmacen-btn{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 12px;cursor:pointer;transition:all 0.15s;text-align:left;}
+.subalmacen-btn:active,.subalmacen-btn.selected{border-color:var(--accent);background:rgba(79,124,255,0.08);}
+.subalmacen-icon{font-size:24px;margin-bottom:8px;}
+.subalmacen-name{font-size:13px;font-weight:600;}
+.subalmacen-count{font-size:11px;color:var(--text2);margin-top:3px;}
+.progress-bar{height:3px;background:var(--surface3);border-radius:2px;margin-top:8px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width 0.3s;}
+.conteo-active-card{background:linear-gradient(135deg,rgba(79,124,255,0.12),rgba(56,217,169,0.06));border:1.5px solid rgba(79,124,255,0.3);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.conteo-num{font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:var(--accent);}
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:28px 20px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:12px;}
+.upload-zone:hover{border-color:var(--accent);background:rgba(79,124,255,0.05);}
+.upload-icon{font-size:32px;margin-bottom:10px;}
+.upload-text{font-size:14px;font-weight:500;margin-bottom:4px;}
+.upload-sub{font-size:12px;color:var(--text2);}
+.cat-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;cursor:pointer;transition:all 0.15s;}
+.cat-item:active{background:var(--surface3);border-color:var(--accent);}
+.cat-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);}
+.cat-dot.daily{background:var(--accent2);}
+.cat-name{font-size:14px;font-weight:500;}
+.cat-meta{font-size:11px;color:var(--text2);margin-top:2px;}
+.badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:rgba(56,217,169,0.15);color:var(--accent2);}
+.producto-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;transition:border-color 0.2s;}
+.producto-item.counted{border-color:rgba(56,217,169,0.4);}
+.producto-item.diff-neg{border-color:rgba(255,92,92,0.4);}
+.producto-item.diff-pos{border-color:rgba(79,124,255,0.4);}
+.producto-header{padding:12px 14px;display:flex;align-items:flex-start;justify-content:space-between;cursor:pointer;}
+.producto-code{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:2px;}
+.producto-name{font-size:14px;font-weight:500;}
+.producto-unit{font-size:11px;color:var(--text2);margin-top:2px;}
+.producto-status{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+.status-dot{width:10px;height:10px;border-radius:50%;background:var(--surface3);border:2px solid var(--border);}
+.status-dot.ok{background:var(--accent2);border-color:var(--accent2);}
+.status-dot.bad{background:var(--danger);border-color:var(--danger);}
+.status-dot.over{background:var(--accent);border-color:var(--accent);}
+.contado-hora{font-size:9px;color:var(--text3);margin-top:2px;}
+.diff-badge{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px;}
+.diff-badge.pos{background:rgba(79,124,255,0.15);color:var(--accent);}
+.diff-badge.neg{background:rgba(255,92,92,0.15);color:var(--danger);}
+.diff-badge.zero{background:rgba(56,217,169,0.15);color:var(--accent2);}
+.input-panel{background:var(--surface2);border-top:1px solid var(--border);padding:14px;display:none;}
+.input-panel.open{display:block;}
+.input-row{display:flex;gap:8px;margin-bottom:10px;align-items:flex-end;}
+.input-group{flex:1;}
+.input-label{font-size:10px;font-weight:600;color:var(--text2);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:5px;}
+.num-input{width:100%;padding:11px 12px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:16px;font-family:'DM Mono',monospace;outline:none;transition:border-color 0.2s;-webkit-appearance:none;}
+.num-input:focus{border-color:var(--accent);}
+.result-row{display:flex;justify-content:space-between;align-items:center;background:var(--surface3);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px;}
+.result-label{font-size:11px;color:var(--text2);}
+.result-value{font-family:'DM Mono',monospace;font-size:16px;font-weight:600;}
+.result-value.neg{color:var(--danger);}
+.result-value.pos{color:var(--accent);}
+.result-value.zero{color:var(--accent2);}
+.btn-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.btn-exacto{padding:12px;background:rgba(56,217,169,0.12);border:1.5px solid rgba(56,217,169,0.4);border-radius:var(--radius-sm);color:var(--accent2);font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;}
+.btn-exacto:active{background:rgba(56,217,169,0.25);}
+.btn-save{padding:12px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.2s,transform 0.1s;}
+.btn-save:active{transform:scale(0.98);opacity:0.85;}
+.mic-btn{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#6b4fff);border:none;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(79,124,255,0.4);transition:all 0.2s;position:fixed;bottom:80px;right:16px;z-index:150;}
+.mic-btn.listening{background:linear-gradient(135deg,var(--danger),#ff4040);animation:pulse 1s infinite;box-shadow:0 4px 20px rgba(255,92,92,0.5);}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.mic-overlay{position:fixed;bottom:150px;left:16px;right:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;z-index:150;display:none;box-shadow:var(--shadow);}
+.mic-overlay.show{display:block;}
+.mic-text{font-size:13px;color:var(--text2);margin-bottom:6px;}
+.mic-heard{font-size:15px;font-weight:500;color:var(--text);font-style:italic;}
+.search-bar{display:flex;align-items:center;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:0 12px;margin-bottom:10px;}
+.search-bar input{flex:1;padding:11px 8px;background:none;border:none;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;}
+.search-icon{color:var(--text3);font-size:18px;}
+.pill-tabs{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;}
+.pill-tab{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:none;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;}
+.pill-tab.active{background:var(--accent);color:white;border-color:var(--accent);}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px;cursor:pointer;transition:color 0.15s;color:var(--text3);border:none;background:none;font-family:'DM Sans',sans-serif;}
+.nav-item.active{color:var(--accent);}
+.nav-icon{font-size:22px;margin-bottom:2px;}
+.nav-label{font-size:10px;font-weight:500;}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:30px;padding:10px 20px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:opacity 0.3s;white-space:nowrap;box-shadow:var(--shadow);}
+.toast.show{opacity:1;}
+.toast.success{border-color:var(--accent2);color:var(--accent2);}
+.toast.error{border-color:var(--danger);color:var(--danger);}
+.hist-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;}
+.hist-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.hist-num{font-family:'DM Mono',monospace;font-size:13px;color:var(--accent);font-weight:500;}
+.hist-date{font-size:11px;color:var(--text2);}
+.hist-stats{display:flex;gap:12px;flex-wrap:wrap;}
+.hist-stat{font-size:11px;color:var(--text2);}
+.hist-stat span{font-weight:600;color:var(--text);}
+.config-row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--border);}
+.config-row:last-child{border-bottom:none;}
+.config-label{font-size:14px;}
+.config-value{font-size:13px;color:var(--text2);font-family:'DM Mono',monospace;}
+.toggle-switch{position:relative;width:44px;height:24px;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--surface3);border-radius:12px;cursor:pointer;transition:0.3s;}
+.toggle-slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s;}
+.toggle-switch input:checked+.toggle-slider{background:var(--accent);}
+.toggle-switch input:checked+.toggle-slider:before{transform:translateX(20px);}
+.btn-outline{padding:10px 18px;background:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;width:100%;margin-bottom:10px;}
+.btn-outline:active{background:var(--surface2);}
+.btn-outline.danger{color:var(--danger);border-color:rgba(255,92,92,0.3);}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:flex-end;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-sheet{background:var(--surface);border-radius:20px 20px 0 0;border:1px solid var(--border);padding:20px;width:100%;max-width:680px;animation:slideUp 0.25s ease;max-height:85vh;overflow-y:auto;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:16px;text-align:center;}
+.resumen-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.resumen-card{background:var(--surface2);border-radius:var(--radius-sm);padding:14px;text-align:center;}
+.resumen-num{font-size:28px;font-weight:700;font-family:'DM Mono',monospace;}
+.resumen-label{font-size:11px;color:var(--text2);margin-top:4px;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text2);}
+.empty-icon{font-size:40px;margin-bottom:12px;}
+.empty-text{font-size:14px;}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 10px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.online-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent2);background:rgba(56,217,169,0.1);border:1px solid rgba(56,217,169,0.2);border-radius:20px;padding:3px 9px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-logo">🎬</div>
+  <div class="login-title">InventApp</div>
+  <div class="login-sub">Cinépolis Pie de la Cuesta</div>
+  <div class="login-card">
+    <div class="login-label">Contraseña de acceso</div>
+    <input type="password" class="login-input" id="pwd-input" placeholder="••••••••" autocomplete="off">
+    <button class="btn-primary" onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="login-error">Contraseña incorrecta.</div>
+    <div style="margin-top:16px;text-align:center;font-size:12px;color:var(--text2);cursor:pointer" onclick="demoLogin()">→ Modo demo (clave: demo)</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="app-header">
+    <div class="header-left">
+      <div class="header-logo">🎬</div>
+      <div>
+        <div class="header-title">InventApp <span class="sync-dot" id="sync-dot" title="Estado sincronización"></span></div>
+        <div class="header-sub" id="header-sub">Cinépolis</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div class="btn-icon" onclick="openNewConteo()">＋</div>
+      <div class="btn-icon" onclick="logout()">⎋</div>
+    </div>
+  </div>
+
+  <div class="screen active" id="screen-home">
+    <div class="section-title">Conteo activo</div>
+    <div id="conteo-active-area"></div>
+    <div class="section-title">Sub-almacenes</div>
+    <div class="subalmacen-grid" id="subalmacen-grid"></div>
+    <div class="section-title">Actualizar teórico (Vista)</div>
+    <div class="card">
+      <div class="upload-zone" onclick="document.getElementById('file-pdf').click()">
+        <div class="upload-icon">📄</div>
+        <div class="upload-text">Subir reporte Vista (PDF/XLS)</div>
+        <div class="upload-sub">Actualiza el teórico sin borrar conteos físicos</div>
+      </div>
+      <input type="file" id="file-pdf" accept=".pdf,.xls,.xlsx" style="display:none" onchange="handlePDFUpload(this)">
+      <div id="upload-status" style="font-size:12px;color:var(--text2);text-align:center;margin-top:8px;display:none"></div>
+    </div>
+    <div class="section-title">Configuración maestro</div>
+    <div class="card">
+      <div class="upload-zone" onclick="document.getElementById('file-cfg').click()">
+        <div class="upload-icon">⚙️</div>
+        <div class="upload-text">Subir Excel de configuración</div>
+        <div class="upload-sub">Conversiones, frecuencias y stock fijo</div>
+      </div>
+      <input type="file" id="file-cfg" accept=".xlsx,.xls" style="display:none" onchange="handleConfigUpload(this)">
+    </div>
+  </div>
+
+  <div class="screen" id="screen-contar">
+    <div id="contar-content">
+      <div class="empty-state">
+        <div class="empty-icon">📦</div>
+        <div class="empty-text">Selecciona un sub-almacén o presiona ＋</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-historial">
+    <div class="section-title">Historial de conteos</div>
+    <div id="historial-list"></div>
+  </div>
+
+  <div class="screen" id="screen-config">
+    <div class="section-title">Sincronización</div>
+    <div class="card">
+      <div class="config-row">
+        <div class="config-label">Google Sheets</div>
+        <div id="cfg-sync-status" class="config-value">Conectando...</div>
+      </div>
+      <div class="config-row">
+        <div class="config-label">Última sync</div>
+        <div id="cfg-sync-time" class="config-value">—</div>
+      </div>
+      <button class="btn-outline" style="margin-top:10px;margin-bottom:0" onclick="syncNow()">🔄 Sincronizar ahora</button>
+    </div>
+    <div class="section-title">Preferencias</div>
+    <div class="card">
+      <div class="config-row">
+        <div class="config-label">🌙 Modo oscuro</div>
+        <label class="toggle-switch"><input type="checkbox" id="toggle-dark" onchange="toggleDark(this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="config-row">
+        <div class="config-label">🎤 Respuesta por voz</div>
+        <label class="toggle-switch"><input type="checkbox" id="toggle-voice" checked onchange="S.voiceEnabled=this.checked;save()"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="config-row">
+        <div class="config-label">Productos cargados</div>
+        <div id="cfg-productos" class="config-value">0</div>
+      </div>
+      <div class="config-row">
+        <div class="config-label">Conteos en historial</div>
+        <div id="cfg-conteos" class="config-value">0</div>
+      </div>
+    </div>
+    <div class="card">
+      <button class="btn-outline" onclick="imprimirActivo()">🖨️ Imprimir conteo activo</button>
+      <button class="btn-outline danger" onclick="limpiarActivo()">🗑️ Limpiar conteo actual</button>
+    </div>
+    <div class="card" style="font-size:12px;color:var(--text2);line-height:1.7">
+      <strong style="color:var(--text)">InventApp v3.0</strong> · Google Sheets sync<br>
+      Cinépolis Pie de la Cuesta · Acapulco<br>
+      iPhone (Safari) y Android (Chrome)
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-item active" onclick="goScreen('home',this)"><div class="nav-icon">🏠</div><div class="nav-label">Inicio</div></button>
+    <button class="nav-item" onclick="goScreen('contar',this)"><div class="nav-icon">📦</div><div class="nav-label">Contar</div></button>
+    <button class="nav-item" onclick="goScreen('historial',this)"><div class="nav-icon">📋</div><div class="nav-label">Historial</div></button>
+    <button class="nav-item" onclick="goScreen('config',this)"><div class="nav-icon">⚙️</div><div class="nav-label">Config</div></button>
+  </div>
+</div>
+
+<button class="mic-btn" id="mic-btn" onclick="toggleMic()" style="display:none">🎤</button>
+<div class="mic-overlay" id="mic-overlay">
+  <div class="mic-text" id="mic-text">Escuchando...</div>
+  <div class="mic-heard" id="mic-heard"></div>
+</div>
+
+<div class="modal-overlay" id="modal-nuevo">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nuevo conteo</div>
+    <div style="margin-bottom:14px">
+      <div class="input-label">Sub-almacén</div>
+      <select id="modal-sub" style="width:100%;padding:12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none">
+        <option value="">Selecciona...</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-outline" style="margin:0" onclick="closeModal('modal-nuevo')">Cancelar</button>
+      <button class="btn-primary" style="margin:0" onclick="iniciarConteo()">Iniciar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-resumen">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="resumen-titulo">Resumen</div>
+    <div class="resumen-grid" id="resumen-grid"></div>
+    <div id="resumen-diffs" style="margin-bottom:16px"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-outline" style="margin:0" onclick="closeModal('modal-resumen')">Cerrar</button>
+      <button class="btn-primary" style="margin:0" onclick="cerrarConteo()">Cerrar conteo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// GOOGLE SHEETS CONFIG
+// ============================================================
+const SHEET_ID = '15CdTh6Y-muUG-m1xpFF1XEht7AxtL6h92rUg1bkHSV4';
+const SHEET_BASE = `https://docs.google.com/spreadsheets/d/${SHEET_ID}`;
+
+// Usamos Google Apps Script Web App como proxy para leer/escribir
+// El Apps Script necesita ser desplegado - por ahora usamos la API pública para leer
+// y localStorage + sync periódica para escribir
+
+async function sheetRead(range) {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&range=${range}`;
+    const r = await fetch(url);
+    const text = await r.text();
+    const json = JSON.parse(text.substring(47).slice(0,-2));
+    return json?.table?.rows || [];
+  } catch(e) { return null; }
+}
+
+async function sheetWrite(sheetName, rows) {
+  // Escribe via Apps Script Web App (se configura una vez)
+  if (!S.appsScriptUrl) return false;
+  try {
+    await fetch(S.appsScriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({action:'write', sheet:sheetName, rows})
+    });
+    return true;
+  } catch(e) { return false; }
+}
+
+// ============================================================
+// ESTADO
+// ============================================================
+const S = {
+  password: 'Cinepolis2024',
+  voiceEnabled: true,
+  darkMode: true,
+  appsScriptUrl: null,
+  productos: {},
+  conteos: {},
+  conteoActivo: null,
+  subalmacenActivo: null,
+  categoriaActiva: null,
+  productosCat: [],
+  recognition: null,
+  isListening: false,
+  syncInterval: null,
+  lastSync: null,
+};
+
+const SUBS = [
+  {key:'ALMACEN GENERAL',icon:'🏪',nombre:'Almacén General'},
+  {key:'SUB-DULCERIA',icon:'🍬',nombre:'Sub Dulcería'},
+  {key:'SUB-SPYRAL-LOBBY',icon:'🌀',nombre:'Sub Spyral'},
+  {key:'SUB-TAQUILLA',icon:'🎬',nombre:'Sub Taquilla'},
+  {key:'SUB-PUNTO VENTA',icon:'🛒',nombre:'Sub Pto. Venta'},
+  {key:'SUB-CT',icon:'☕',nombre:'Sub Coffee Tree'},
+];
+
+// ============================================================
+// PERSISTENCIA LOCAL
+// ============================================================
+function save() {
+  try {
+    localStorage.setItem('inv3_conteos', JSON.stringify(S.conteos));
+    localStorage.setItem('inv3_activo', JSON.stringify(S.conteoActivo));
+    localStorage.setItem('inv3_productos', JSON.stringify(S.productos));
+    localStorage.setItem('inv3_dark', S.darkMode?'1':'0');
+    localStorage.setItem('inv3_voice', S.voiceEnabled?'1':'0');
+    if(S.appsScriptUrl) localStorage.setItem('inv3_gasurl', S.appsScriptUrl);
+  } catch(e){}
+}
+
+function load() {
+  try {
+    const c=localStorage.getItem('inv3_conteos'); if(c) S.conteos=JSON.parse(c);
+    const a=localStorage.getItem('inv3_activo');  if(a) S.conteoActivo=JSON.parse(a);
+    const p=localStorage.getItem('inv3_productos');if(p) S.productos=JSON.parse(p);
+    S.darkMode=localStorage.getItem('inv3_dark')!=='0';
+    S.voiceEnabled=localStorage.getItem('inv3_voice')!=='0';
+    S.appsScriptUrl=localStorage.getItem('inv3_gasurl')||'https://script.google.com/macros/s/AKfycbyF1PwOu1bcn-wnNMbz4db8hysT_TkgXF8llbJJhtkf9yylVWfhDoPlNnIXrZZ7RAA58A/exec';
+    const pwd=localStorage.getItem('inv3_pwd'); if(pwd) S.password=pwd;
+  } catch(e){}
+}
+
+// ============================================================
+// SYNC CON GOOGLE SHEETS
+// ============================================================
+function setSyncDot(state) {
+  const d=document.getElementById('sync-dot');
+  if(!d) return;
+  d.className='sync-dot '+state;
+  d.title={syncing:'Sincronizando...',ok:'Sincronizado',err:'Sin conexión','':'Sin configurar'}[state]||'';
+}
+
+async function syncToSheet() {
+  if(!S.conteoActivo) return;
+  setSyncDot('syncing');
+  try {
+    // Leer conteos actuales del sheet para merge
+    const rows = await sheetRead('Conteos!A:Z');
+    if(rows === null) throw new Error('No se pudo leer');
+
+    // Preparar datos para escribir
+    const data = [];
+    const ca = S.conteoActivo;
+    Object.entries(ca.items||{}).forEach(([key, item]) => {
+      const [sub, cod] = key.split('__');
+      const prod = (S.productos[sub]||[]).find(p=>p.codigo==cod)||{};
+      data.push([
+        ca.numero, sub, cod, prod.nombre||'', prod.unidad||'',
+        item.fisico, item.diferencia, item.exacto?'EXACTO':'',
+        new Date(item.timestamp).toLocaleString('es-MX'),
+        ca.fecha
+      ]);
+    });
+
+    if(data.length > 0) {
+      await sheetWrite('Conteos', data);
+    }
+
+    S.lastSync = new Date();
+    setSyncDot('ok');
+    document.getElementById('cfg-sync-time').textContent =
+      S.lastSync.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('cfg-sync-status').textContent = '✓ Conectado';
+  } catch(e) {
+    setSyncDot('err');
+    document.getElementById('cfg-sync-status').textContent = 'Sin conexión';
+  }
+}
+
+async function syncFromSheet() {
+  // Leer conteos de otros usuarios del sheet
+  if(!S.conteoActivo) return;
+  setSyncDot('syncing');
+  try {
+    const rows = await sheetRead(`Conteos_${S.conteoActivo.numero}!A:J`);
+    if(!rows || rows.length === 0) { setSyncDot('ok'); return; }
+
+    let updated = false;
+    rows.forEach(row => {
+      if(!row.c || row.c.length < 9) return;
+      const vals = row.c.map(c=>c?.v??'');
+      const [num, sub, cod, nombre, unidad, fisico, diferencia, exacto, hora] = vals;
+      if(String(num) !== String(S.conteoActivo.numero)) return;
+      if(sub !== S.conteoActivo.subalmacen) return;
+      const key = `${sub}__${cod}`;
+      if(!S.conteoActivo.items[key]) {
+        S.conteoActivo.items[key] = {
+          fisico: parseFloat(fisico)||0,
+          diferencia: parseFloat(diferencia)||0,
+          exacto: exacto==='EXACTO',
+          timestamp: Date.now(),
+          fromSync: true
+        };
+        updated = true;
+      }
+    });
+
+    if(updated) {
+      save();
+      renderSubalmacenes();
+      if(S.categoriaActiva) renderProdsActual();
+      showToast('🔄 Actualizado desde la nube','success');
+    }
+    setSyncDot('ok');
+  } catch(e) { setSyncDot('err'); }
+}
+
+function syncNow() {
+  syncToSheet();
+  setTimeout(syncFromSheet, 1000);
+}
+
+function startAutoSync() {
+  if(S.syncInterval) clearInterval(S.syncInterval);
+  S.syncInterval = setInterval(()=>{
+    if(S.conteoActivo) { syncToSheet(); setTimeout(syncFromSheet,2000); }
+  }, 30000); // cada 30 segundos
+}
+
+// ============================================================
+// DARK MODE
+// ============================================================
+function applyDark() { document.body.classList.toggle('light-mode',!S.darkMode); }
+function toggleDark(v) { S.darkMode=v; applyDark(); save(); }
+
+// ============================================================
+// LOGIN
+// ============================================================
+document.getElementById('pwd-input').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+function doLogin() {
+  if(document.getElementById('pwd-input').value===S.password) {
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    initApp();
+  } else {
+    document.getElementById('login-error').style.display='block';
+    document.getElementById('pwd-input').value='';
+  }
+}
+
+function demoLogin() {
+  S.password='demo';
+  document.getElementById('pwd-input').value='demo';
+  doLogin();
+  setTimeout(loadDemo,400);
+}
+
+function logout() {
+  if(confirm('¿Cerrar sesión?')) {
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('app').style.display='none';
+    document.getElementById('pwd-input').value='';
+    if(S.syncInterval) clearInterval(S.syncInterval);
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function initApp() {
+  applyDark();
+  document.getElementById('toggle-dark').checked=S.darkMode;
+  document.getElementById('toggle-voice').checked=S.voiceEnabled;
+  renderSubalmacenes();
+  renderConteoActivo();
+  renderHistorial();
+  updateCfg();
+  initVoice();
+  startAutoSync();
+  // Primer sync
+  setTimeout(()=>{ syncFromSheet(); setSyncDot(S.appsScriptUrl?'ok':''); },1500);
+  if(!S.appsScriptUrl) {
+    document.getElementById('cfg-sync-status').textContent='Ver instrucciones';
+    setSyncDot('');
+  }
+}
+
+// ============================================================
+// NAVEGACIÓN
+// ============================================================
+function goScreen(name,btn) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  if(btn) btn.classList.add('active');
+  document.getElementById('mic-btn').style.display=
+    (name==='contar'&&S.categoriaActiva)?'flex':'none';
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// ============================================================
+// SUB-ALMACENES
+// ============================================================
+function renderSubalmacenes() {
+  const grid=document.getElementById('subalmacen-grid');
+  grid.innerHTML='';
+  SUBS.forEach(sub=>{
+    const prods=S.productos[sub.key]||[];
+    const items=S.conteoActivo?.subalmacen===sub.key?S.conteoActivo.items||{}:{};
+    const contados=Object.keys(items).length;
+    const pct=prods.length>0?Math.round(contados/prods.length*100):0;
+    const div=document.createElement('div');
+    div.className='subalmacen-btn';
+    div.innerHTML=`<div class="subalmacen-icon">${sub.icon}</div>
+      <div class="subalmacen-name">${sub.nombre}</div>
+      <div class="subalmacen-count">${prods.length} prod · ${contados} contados</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>`;
+    div.onclick=()=>selSub(sub.key);
+    grid.appendChild(div);
+  });
+}
+
+// ============================================================
+// CATEGORÍAS
+// ============================================================
+function selSub(key) {
+  S.subalmacenActivo=key; S.categoriaActiva=null;
+  document.getElementById('mic-btn').style.display='none';
+  const sub=SUBS.find(s=>s.key===key);
+  const prods=S.productos[key]||[];
+  const cats={};
+  prods.forEach(p=>{const c=p.categoria||'GENERAL';if(!cats[c])cats[c]=[];cats[c].push(p);});
+  const catKeys=Object.keys(cats).sort((a,b)=>{
+    const hd=arr=>arr.some(p=>p.frecuencia==='DIARIO');
+    if(hd(cats[a])&&!hd(cats[b]))return -1;
+    if(!hd(cats[a])&&hd(cats[b]))return 1;
+    return a.localeCompare(b);
+  });
+  const content=document.getElementById('contar-content');
+  content.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div class="btn-icon" onclick="goScreen('home',document.querySelector('.nav-item'))" style="font-size:20px">←</div>
+      <div><div style="font-size:16px;font-weight:700">${sub.nombre}</div>
+      <div style="font-size:11px;color:var(--text2)">${prods.length} productos</div></div>
+    </div>
+    <div class="pill-tabs">
+      <div class="pill-tab active" onclick="filtCats('todos',this)">Todos</div>
+      <div class="pill-tab" onclick="filtCats('diario',this)">⭐ Diarios</div>
+      <div class="pill-tab" onclick="filtCats('pendientes',this)">Pendientes</div>
+    </div>
+    <div id="cats-list"></div>`;
+  const list=document.getElementById('cats-list');
+  catKeys.forEach(cat=>{
+    const ps=cats[cat];
+    const hd=ps.some(p=>p.frecuencia==='DIARIO');
+    const contados=ps.filter(p=>{
+      const k=`${key}__${p.codigo}`;
+      return S.conteoActivo?.items?.[k];
+    }).length;
+    const div=document.createElement('div');
+    div.className='cat-item';
+    div.dataset.cat=cat;div.dataset.daily=hd?'1':'0';
+    div.dataset.contados=contados;div.dataset.total=ps.length;
+    div.innerHTML=`<div style="display:flex;align-items:center;gap:10px">
+      <div class="cat-dot ${hd?'daily':''}"></div>
+      <div><div class="cat-name">${cat}</div>
+      <div class="cat-meta">${ps.length} prod · ${contados} contados</div></div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+      ${hd?'<span class="badge">DIARIO</span>':''}
+      <span style="color:var(--text3);font-size:18px">›</span></div>`;
+    div.onclick=()=>verCat(cat,ps);
+    list.appendChild(div);
+  });
+  goScreen('contar',document.querySelector('.nav-item:nth-child(2)'));
+}
+
+function filtCats(tipo,btn) {
+  document.querySelectorAll('.pill-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.cat-item').forEach(item=>{
+    if(tipo==='todos') item.style.display='';
+    else if(tipo==='diario') item.style.display=item.dataset.daily==='1'?'':'none';
+    else item.style.display=parseInt(item.dataset.contados)<parseInt(item.dataset.total)?'':'none';
+  });
+}
+
+// ============================================================
+// PRODUCTOS
+// ============================================================
+function verCat(catName,prods) {
+  S.categoriaActiva=catName;
+  S.productosCat=prods.sort((a,b)=>{
+    if(a.frecuencia==='DIARIO'&&b.frecuencia!=='DIARIO')return -1;
+    if(a.frecuencia!=='DIARIO'&&b.frecuencia==='DIARIO')return 1;
+    return a.nombre.localeCompare(b.nombre);
+  });
+  document.getElementById('mic-btn').style.display='flex';
+  const content=document.getElementById('contar-content');
+  content.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div class="btn-icon" onclick="selSub('${S.subalmacenActivo}')" style="font-size:20px">←</div>
+      <div><div style="font-size:16px;font-weight:700">${catName}</div>
+      <div style="font-size:11px;color:var(--text2)">${prods.length} productos</div></div>
+    </div>
+    <div class="search-bar"><span class="search-icon">🔍</span>
+      <input type="text" placeholder="Buscar producto..." oninput="filtProds(this.value)" autocomplete="off">
+    </div>
+    <div class="pill-tabs">
+      <div class="pill-tab active" onclick="filtTab('todos',this)">Todos</div>
+      <div class="pill-tab" onclick="filtTab('pendientes',this)">Pendientes</div>
+      <div class="pill-tab" onclick="filtTab('diferencias',this)">⚠️ Diferencias</div>
+      <div class="pill-tab" onclick="filtTab('exactos',this)">✓ Exactos</div>
+    </div>
+    <div id="productos-list"></div>`;
+  renderProdsActual();
+}
+
+let activeTab='todos';
+function filtTab(tipo,btn) {
+  activeTab=tipo;
+  document.querySelectorAll('.pill-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  filtProds(document.querySelector('#contar-content .search-bar input')?.value||'');
+}
+
+function filtProds(q) {
+  q=q.toLowerCase();
+  document.querySelectorAll('.producto-item').forEach(item=>{
+    const nm=item.dataset.nombre||''; const cd=item.dataset.codigo||'';
+    const tab=item.dataset.tab||'pendientes';
+    const matchQ=!q||(nm.includes(q)||cd.includes(q));
+    const matchTab=activeTab==='todos'||(activeTab===tab)||
+      (activeTab==='diferencias'&&(tab==='neg'||tab==='pos'))||
+      (activeTab==='exactos'&&tab==='zero');
+    item.style.display=(matchQ&&matchTab)?'':'none';
+  });
+}
+
+function renderProdsActual() {
+  const list=document.getElementById('productos-list');
+  if(!list) return;
+  list.innerHTML='';
+  S.productosCat.forEach(p=>list.appendChild(buildProdEl(p)));
+}
+
+function buildProdEl(p) {
+  const key=`${S.subalmacenActivo}__${p.codigo}`;
+  const conteo=S.conteoActivo?.items?.[key];
+  const isCounted=!!conteo;
+  const diff=conteo?(conteo.fisico-parseFloat(p.teorico||0)):null;
+  const isNeg=diff!==null&&diff<0;
+  const isPos=diff!==null&&diff>0;
+  let tabClass=isCounted?(isNeg?'neg':isPos?'pos':'zero'):'pendientes';
+  let diffHTML='';
+  if(diff!==null){
+    const cls=isNeg?'neg':isPos?'pos':'zero';
+    diffHTML=`<span class="diff-badge ${cls}">${isPos?'+':''}${diff.toFixed(2)}</span>`;
+  }
+  let horaHTML='';
+  if(conteo?.timestamp){
+    const h=new Date(conteo.timestamp).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+    const fromSync=conteo.fromSync?'🔄':'';
+    horaHTML=`<div class="contado-hora">${fromSync}✓ ${h}</div>`;
+  }
+  const div=document.createElement('div');
+  div.className=`producto-item${isCounted?(isNeg?' diff-neg':isPos?' diff-pos':' counted'):''}`;
+  div.dataset.nombre=p.nombre.toLowerCase();
+  div.dataset.codigo=p.codigo;
+  div.dataset.tab=tabClass;
+  div.innerHTML=`
+    <div class="producto-header" onclick="togglePanel('${p.codigo}')">
+      <div>
+        <div class="producto-code">#${p.codigo}${p.frecuencia==='DIARIO'?' ⭐':''}</div>
+        <div class="producto-name">${p.nombre}</div>
+        <div class="producto-unit">${isCounted?`Físico: ${conteo.fisico.toFixed(2)} ${p.unidad}`:`Teórico: ${parseFloat(p.teorico||0).toFixed(2)} ${p.unidad}`}</div>
+      </div>
+      <div class="producto-status">
+        <div class="status-dot ${isCounted?(isNeg?'bad':isPos?'over':'ok'):''}"></div>
+        ${diffHTML}${horaHTML}
+      </div>
+    </div>
+    <div class="input-panel${isCounted?' open':''}" id="panel-${p.codigo}">
+      ${buildPanel(p,conteo)}
+    </div>`;
+  return div;
+}
+
+function togglePanel(cod){
+  const p=document.getElementById('panel-'+cod);
+  if(p) p.classList.toggle('open');
+}
+
+function buildPanel(p,conteo) {
+  const uc=p.unidadCaptura||p.unidad;
+  if(p.tieneDesglose==='SÍ'){
+    const cj=conteo?.cajas||'';const bl=conteo?.bolsas||'';const gr=conteo?.gramos||'';
+    return `<div class="input-row">
+      <div class="input-group"><div class="input-label">Cajas completas</div>
+        <input type="number" class="num-input" id="caj-${p.codigo}" value="${cj}" placeholder="0" min="0" oninput="calcDsg('${p.codigo}')"></div>
+      <div class="input-group"><div class="input-label">Bolsas completas</div>
+        <input type="number" class="num-input" id="bol-${p.codigo}" value="${bl}" placeholder="0" min="0" oninput="calcDsg('${p.codigo}')"></div>
+    </div>
+    <div class="input-row"><div class="input-group">
+      <div class="input-label">${p.reqConversion==='SÍ'?`En uso (${uc})`:'Sueltos/en uso'}</div>
+      <input type="number" class="num-input" id="gra-${p.codigo}" value="${gr}" placeholder="0" min="0" step="any" oninput="calcDsg('${p.codigo}')"></div></div>
+    <div class="result-row">
+      <div><div class="result-label">Total (${p.unidad})</div><div id="tot-${p.codigo}" class="result-value">—</div></div>
+      <div><div class="result-label">Diferencia</div><div id="dif-${p.codigo}" class="result-value">—</div></div>
+    </div>
+    <div class="btn-actions">
+      <button class="btn-exacto" onclick="guardarExacto('${p.codigo}','${p.teorico||0}')">✓ Exacto</button>
+      <button class="btn-save" onclick="guardarDsg('${p.codigo}','${p.teorico||0}')">Guardar</button>
+    </div>`;
+  } else if(p.reqConversion==='SÍ'){
+    const pv=conteo?.pesoCaptura||'';
+    return `<div class="input-row"><div class="input-group">
+      <div class="input-label">Peso en campo (${uc})</div>
+      <input type="number" class="num-input" id="pes-${p.codigo}" value="${pv}" placeholder="0" min="0" step="any"
+        oninput="calcConv('${p.codigo}','${p.factorConversion||1}','${p.taraCaja||0}','${p.teorico||0}')"></div></div>
+    <div class="result-row">
+      <div><div class="result-label">Total (${p.unidad})</div><div id="tot-${p.codigo}" class="result-value">—</div></div>
+      <div><div class="result-label">Diferencia</div><div id="dif-${p.codigo}" class="result-value">—</div></div>
+    </div>
+    <div class="btn-actions">
+      <button class="btn-exacto" onclick="guardarExacto('${p.codigo}','${p.teorico||0}')">✓ Exacto</button>
+      <button class="btn-save" onclick="guardarConv('${p.codigo}','${p.factorConversion||1}','${p.taraCaja||0}','${p.teorico||0}')">Guardar</button>
+    </div>`;
+  } else {
+    const fv=conteo?.fisico||'';
+    return `<div class="input-row"><div class="input-group">
+      <div class="input-label">Cantidad física (${p.unidad})</div>
+      <input type="number" class="num-input" id="fis-${p.codigo}" value="${fv}" placeholder="0" min="0" step="any"
+        oninput="calcSimp('${p.codigo}','${p.teorico||0}')"></div></div>
+    <div class="result-row">
+      <div class="result-label">Diferencia</div>
+      <div id="dif-${p.codigo}" class="result-value">—</div>
+    </div>
+    <div class="btn-actions">
+      <button class="btn-exacto" onclick="guardarExacto('${p.codigo}','${p.teorico||0}')">✓ Exacto</button>
+      <button class="btn-save" onclick="guardarSimp('${p.codigo}','${p.teorico||0}')">Guardar</button>
+    </div>`;
+  }
+}
+
+// ============================================================
+// CÁLCULOS
+// ============================================================
+function calcSimp(cod,teo){
+  const v=parseFloat(document.getElementById('fis-'+cod)?.value)||0;
+  setDiff('dif-'+cod,v-parseFloat(teo));
+}
+function calcConv(cod,fac,tara,teo){
+  const p=parseFloat(document.getElementById('pes-'+cod)?.value)||0;
+  const tot=Math.max(0,p-parseFloat(tara))*parseFloat(fac);
+  const el=document.getElementById('tot-'+cod);if(el)el.textContent=tot.toFixed(2);
+  setDiff('dif-'+cod,tot-parseFloat(teo));
+}
+function calcDsg(cod){
+  const p=S.productosCat.find(x=>x.codigo==cod)||{};
+  const cj=parseFloat(document.getElementById('caj-'+cod)?.value)||0;
+  const bl=parseFloat(document.getElementById('bol-'+cod)?.value)||0;
+  const gr=parseFloat(document.getElementById('gra-'+cod)?.value)||0;
+  const uxc=parseFloat(p.unidadXCaja)||0;const uxb=parseFloat(p.unidadXBolsa)||0;
+  const fac=parseFloat(p.factorConversion)||1;const tb=parseFloat(p.taraBolsa)||0;
+  const s=p.reqConversion==='SÍ'?Math.max(0,gr-tb)*fac:gr;
+  const tot=(cj*uxc*uxb)+(bl*uxb)+s;
+  const el=document.getElementById('tot-'+cod);if(el)el.textContent=tot.toFixed(2);
+  setDiff('dif-'+cod,tot-parseFloat(p.teorico||0));
+}
+function setDiff(id,d){
+  const el=document.getElementById(id);if(!el)return;
+  const cls=d<0?'neg':d>0?'pos':'zero';
+  el.className='result-value '+cls;
+  el.textContent=(d>0?'+':'')+d.toFixed(2);
+}
+
+// ============================================================
+// GUARDAR
+// ============================================================
+function ensureActivo(){if(!S.conteoActivo){showToast('Inicia un conteo primero (＋)','error');return false;}return true;}
+
+function guardarExacto(cod,teo){
+  if(!ensureActivo())return;
+  const key=`${S.subalmacenActivo}__${cod}`;
+  S.conteoActivo.items[key]={fisico:parseFloat(teo)||0,diferencia:0,exacto:true,timestamp:Date.now()};
+  save();actualizarUI(cod,0);hablar('Exacto. Sin diferencia.');
+  showToast('✓ Exacto guardado','success');
+  syncToSheet();
+}
+function guardarSimp(cod,teo){
+  if(!ensureActivo())return;
+  const v=parseFloat(document.getElementById('fis-'+cod)?.value);
+  if(isNaN(v)||v<0){showToast('Cantidad inválida','error');return;}
+  const d=v-parseFloat(teo);
+  const key=`${S.subalmacenActivo}__${cod}`;
+  S.conteoActivo.items[key]={fisico:v,diferencia:d,timestamp:Date.now()};
+  save();actualizarUI(cod,d);hablarResultado(v,d);showToast('✓ Guardado','success');
+  syncToSheet();
+}
+function guardarConv(cod,fac,tara,teo){
+  if(!ensureActivo())return;
+  const p=parseFloat(document.getElementById('pes-'+cod)?.value);
+  if(isNaN(p)||p<0){showToast('Peso inválido','error');return;}
+  const tot=Math.max(0,p-parseFloat(tara))*parseFloat(fac);
+  const d=tot-parseFloat(teo);
+  const key=`${S.subalmacenActivo}__${cod}`;
+  S.conteoActivo.items[key]={fisico:tot,pesoCaptura:p,diferencia:d,timestamp:Date.now()};
+  save();actualizarUI(cod,d);hablarResultado(tot,d);showToast('✓ Guardado','success');
+  syncToSheet();
+}
+function guardarDsg(cod,teo){
+  if(!ensureActivo())return;
+  const el=document.getElementById('tot-'+cod);
+  const tot=parseFloat(el?.textContent);
+  if(isNaN(tot)){showToast('Ingresa las cantidades primero','error');return;}
+  const cj=parseFloat(document.getElementById('caj-'+cod)?.value)||0;
+  const bl=parseFloat(document.getElementById('bol-'+cod)?.value)||0;
+  const gr=parseFloat(document.getElementById('gra-'+cod)?.value)||0;
+  const d=tot-parseFloat(teo);
+  const key=`${S.subalmacenActivo}__${cod}`;
+  S.conteoActivo.items[key]={fisico:tot,cajas:cj,bolsas:bl,gramos:gr,diferencia:d,timestamp:Date.now()};
+  save();actualizarUI(cod,d);hablarResultado(tot,d);showToast('✓ Guardado','success');
+  syncToSheet();
+}
+
+function actualizarUI(cod,diff){
+  renderSubalmacenes();
+  document.querySelectorAll('.producto-item').forEach(item=>{
+    if(item.dataset.codigo!==String(cod))return;
+    item.classList.remove('counted','diff-neg','diff-pos');
+    item.classList.add(diff<0?'diff-neg':diff>0?'diff-pos':'counted');
+    const dot=item.querySelector('.status-dot');
+    if(dot){dot.classList.remove('ok','bad','over');dot.classList.add(diff<0?'bad':diff>0?'over':'ok');}
+  });
+}
+
+// ============================================================
+// VOZ
+// ============================================================
+function initVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){document.getElementById('mic-btn').style.display='none';return;}
+  S.recognition=new SR();S.recognition.lang='es-MX';S.recognition.continuous=false;S.recognition.interimResults=true;
+  S.recognition.onresult=e=>{
+    let interim='';let final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    document.getElementById('mic-heard').textContent=final||interim;
+    if(final)procesarVoz(final.trim().toLowerCase());
+  };
+  S.recognition.onend=()=>{S.isListening=false;updateMicUI();document.getElementById('mic-overlay').classList.remove('show');};
+  S.recognition.onerror=()=>{S.isListening=false;updateMicUI();};
+}
+function toggleMic(){
+  if(!S.recognition){showToast('Voz no disponible en este navegador','error');return;}
+  if(S.isListening){S.recognition.stop();return;}
+  S.isListening=true;updateMicUI();
+  document.getElementById('mic-overlay').classList.add('show');
+  document.getElementById('mic-heard').textContent='';
+  try{S.recognition.start();}catch(e){}
+}
+function updateMicUI(){
+  const btn=document.getElementById('mic-btn');
+  btn.classList.toggle('listening',S.isListening);
+  btn.textContent=S.isListening?'⏹':'🎤';
+}
+function procesarVoz(texto){
+  if(texto.includes('exacto')||texto.includes('correcto')){
+    const prod=encontrarProducto(texto);
+    if(prod){guardarExacto(prod.codigo,prod.teorico);return;}
+  }
+  if(texto.includes('cuánto llevo')||texto.includes('avance')){
+    const n=Object.keys(S.conteoActivo?.items||{}).length;
+    hablar(`Llevas ${n} productos contados.`);return;
+  }
+  const numero=extraerNumero(texto);
+  if(numero===null){hablar('No entendí la cantidad.');return;}
+  const prod=encontrarProducto(texto);
+  if(!prod){hablar('No encontré ese producto.');return;}
+  const panel=document.getElementById('panel-'+prod.codigo);
+  if(panel&&!panel.classList.contains('open'))panel.classList.add('open');
+  if(prod.tieneDesglose==='SÍ'){
+    const inp=document.getElementById('gra-'+prod.codigo)||document.getElementById('fis-'+prod.codigo);
+    if(inp){inp.value=numero;calcDsg(prod.codigo);}
+  } else if(prod.reqConversion==='SÍ'){
+    const inp=document.getElementById('pes-'+prod.codigo);
+    if(inp){inp.value=numero;calcConv(prod.codigo,prod.factorConversion||1,prod.taraCaja||0,prod.teorico||0);}
+  } else {
+    const inp=document.getElementById('fis-'+prod.codigo);
+    if(inp){inp.value=numero;calcSimp(prod.codigo,prod.teorico||0);}
+  }
+  const n3=prod.nombre.split(' ').slice(0,3).join(' ');
+  document.getElementById('mic-text').textContent=`"${prod.nombre}" = ${numero}. Di "sí" para guardar.`;
+  hablar(`${n3}, ${numero} ${prod.unidad}.`);
+  setTimeout(()=>esperarConfirmacion(prod,numero),1500);
+}
+function esperarConfirmacion(prod,numero){
+  if(!S.recognition||!S.voiceEnabled)return;
+  const rec=new (window.SpeechRecognition||window.webkitSpeechRecognition)();
+  rec.lang='es-MX';rec.continuous=false;
+  rec.onresult=e=>{
+    const txt=e.results[0][0].transcript.toLowerCase();
+    if(txt.includes('sí')||txt.includes('si')||txt.includes('confirma')){
+      if(prod.tieneDesglose==='SÍ')guardarDsg(prod.codigo,prod.teorico||0);
+      else if(prod.reqConversion==='SÍ')guardarConv(prod.codigo,prod.factorConversion||1,prod.taraCaja||0,prod.teorico||0);
+      else guardarSimp(prod.codigo,prod.teorico||0);
+    } else hablar('Cancelado.');
+    document.getElementById('mic-text').textContent='Escuchando...';
+  };
+  rec.onerror=()=>{};
+  try{rec.start();}catch(e){}
+}
+function encontrarProducto(texto){
+  let mejor=null;let maxScore=0;
+  S.productosCat.forEach(p=>{
+    const nombre=p.nombre.toLowerCase();
+    const palabras=nombre.split(' ').filter(w=>w.length>3);
+    let score=palabras.filter(w=>texto.includes(w)).length;
+    if(score>maxScore){maxScore=score;mejor=p;}
+  });
+  return maxScore>0?mejor:null;
+}
+function extraerNumero(texto){
+  const m=texto.match(/\d+([.,]\d+)?/);
+  if(m)return parseFloat(m[0].replace(',','.'));
+  const map={cero:0,uno:1,una:1,dos:2,tres:3,cuatro:4,cinco:5,seis:6,siete:7,ocho:8,nueve:9,diez:10,
+    once:11,doce:12,trece:13,catorce:14,quince:15,veinte:20,treinta:30,cuarenta:40,cincuenta:50,
+    sesenta:60,setenta:70,ochenta:80,noventa:90,cien:100,ciento:100,doscientos:200,trescientos:300,
+    cuatrocientos:400,quinientos:500,seiscientos:600,setecientos:700,ochocientos:800,novecientos:900,mil:1000};
+  let total=0;let current=0;
+  texto.split(/\s+/).forEach(w=>{
+    if(map[w]!==undefined){
+      if(w==='mil'){current=(current||1)*1000;total+=current;current=0;}
+      else current+=map[w];
+    }
+  });
+  total+=current;
+  return total>0?total:null;
+}
+function hablar(texto){
+  if(!S.voiceEnabled||!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(texto);
+  u.lang='es-MX';u.rate=1.05;u.pitch=1;
+  window.speechSynthesis.speak(u);
+}
+function hablarResultado(fisico,diff){
+  if(!S.voiceEnabled)return;
+  const f=fisico%1===0?fisico.toFixed(0):fisico.toFixed(1);
+  const d=Math.abs(diff)%1===0?Math.abs(diff).toFixed(0):Math.abs(diff).toFixed(1);
+  if(diff===0)hablar(`Físico ${f}. Exacto, sin diferencia.`);
+  else if(diff<0)hablar(`Físico ${f}. Diferencia de menos ${d}.`);
+  else hablar(`Físico ${f}. Diferencia de más ${d}.`);
+}
+
+// ============================================================
+// CONTEO
+// ============================================================
+function openNewConteo(){
+  const sel=document.getElementById('modal-sub');
+  sel.innerHTML='<option value="">Selecciona...</option>';
+  SUBS.forEach(s=>{const o=document.createElement('option');o.value=s.key;o.textContent=s.nombre;sel.appendChild(o);});
+  document.getElementById('modal-nuevo').classList.add('open');
+}
+function iniciarConteo(){
+  const sub=document.getElementById('modal-sub').value;
+  if(!sub){showToast('Selecciona un sub-almacén','error');return;}
+  if(S.conteoActivo){
+    const k=S.conteoActivo.subalmacen+'_'+S.conteoActivo.numero;
+    S.conteos[k]={...S.conteoActivo,cerrado:Date.now()};
+  }
+  const existentes=Object.keys(S.conteos).filter(k=>k.startsWith(sub+'_'));
+  const nums=existentes.map(k=>parseInt(k.split('_').pop())).filter(n=>!isNaN(n));
+  const next=nums.length>0?Math.max(...nums)+1:1;
+  S.conteoActivo={id:Date.now(),subalmacen:sub,numero:next,fecha:new Date().toISOString(),items:{}};
+  S.subalmacenActivo=sub;
+  save();closeModal('modal-nuevo');
+  renderConteoActivo();renderSubalmacenes();renderHistorial();updateCfg();
+  showToast(`Conteo #${next} iniciado ✓`,'success');
+  selSub(sub);
+}
+function renderConteoActivo(){
+  const area=document.getElementById('conteo-active-area');
+  if(!S.conteoActivo){
+    area.innerHTML=`<div class="card" style="text-align:center;padding:24px;color:var(--text2)">
+      <div style="font-size:28px;margin-bottom:8px">📋</div>
+      <div style="font-size:14px">Sin conteo activo. Presiona ＋ para iniciar.</div></div>`;
+    return;
+  }
+  const ca=S.conteoActivo;
+  const sub=SUBS.find(s=>s.key===ca.subalmacen);
+  const prods=S.productos[ca.subalmacen]||[];
+  const contados=Object.keys(ca.items||{}).length;
+  const pct=prods.length>0?Math.round(contados/prods.length*100):0;
+  const fecha=new Date(ca.fecha).toLocaleDateString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  const negs=Object.values(ca.items).filter(i=>i.diferencia<0).length;
+  area.innerHTML=`<div class="conteo-active-card" onclick="selSub('${ca.subalmacen}')">
+    <div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:2px">${sub?.nombre}</div>
+      <div class="conteo-num">Conteo #${ca.numero}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px">${fecha}</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:26px;font-weight:700;color:var(--accent)">${pct}%</div>
+      <div style="font-size:11px;color:var(--text2)">${contados}/${prods.length} prod.</div>
+      ${negs>0?`<div style="font-size:11px;color:var(--danger);margin-top:4px">⚠️ ${negs} diferencias</div>`:''}
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <button class="btn-outline" style="margin:0;font-size:13px" onclick="mostrarResumen()">📊 Resumen</button>
+    <button class="btn-outline" style="margin:0;font-size:13px" onclick="imprimirActivo()">🖨️ Imprimir</button>
+    <button class="btn-outline" style="margin:0;font-size:13px" onclick="syncNow()">🔄 Sync</button>
+  </div>`;
+}
+
+// ============================================================
+// RESUMEN
+// ============================================================
+function mostrarResumen(){
+  if(!S.conteoActivo){showToast('No hay conteo activo','error');return;}
+  const ca=S.conteoActivo;const sub=SUBS.find(s=>s.key===ca.subalmacen);
+  const prods=S.productos[ca.subalmacen]||[];
+  const items=Object.values(ca.items||{});
+  const contados=items.length;
+  const exactos=items.filter(i=>i.diferencia===0||i.exacto).length;
+  const negs=items.filter(i=>i.diferencia<0).length;
+  const pos=items.filter(i=>i.diferencia>0&&!i.exacto).length;
+  const pendientes=prods.length-contados;
+  document.getElementById('resumen-titulo').textContent=`Conteo #${ca.numero} — ${sub?.nombre}`;
+  document.getElementById('resumen-grid').innerHTML=`
+    <div class="resumen-card"><div class="resumen-num" style="color:var(--accent)">${contados}</div><div class="resumen-label">Contados</div></div>
+    <div class="resumen-card"><div class="resumen-num" style="color:var(--text2)">${pendientes}</div><div class="resumen-label">Pendientes</div></div>
+    <div class="resumen-card"><div class="resumen-num" style="color:var(--accent2)">${exactos}</div><div class="resumen-label">Exactos ✓</div></div>
+    <div class="resumen-card"><div class="resumen-num" style="color:var(--danger)">${negs}</div><div class="resumen-label">Con faltante ↓</div></div>`;
+  let diffsHTML='';
+  if(negs>0||pos>0){
+    diffsHTML='<div class="section-title" style="margin-bottom:8px">Productos con diferencia</div>';
+    prods.forEach(p=>{
+      const k=`${ca.subalmacen}__${p.codigo}`;const it=ca.items?.[k];
+      if(!it||it.diferencia===0)return;
+      const cls=it.diferencia<0?'neg':'pos';const sign=it.diferencia>0?'+':'';
+      diffsHTML+=`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+        <span style="flex:1;padding-right:8px">${p.nombre}</span>
+        <span class="diff-badge ${cls}">${sign}${it.diferencia.toFixed(2)} ${p.unidad}</span></div>`;
+    });
+  }
+  document.getElementById('resumen-diffs').innerHTML=diffsHTML;
+  document.getElementById('modal-resumen').classList.add('open');
+}
+function cerrarConteo(){
+  if(!S.conteoActivo)return;
+  const k=S.conteoActivo.subalmacen+'_'+S.conteoActivo.numero;
+  S.conteos[k]={...S.conteoActivo,cerrado:Date.now()};
+  syncToSheet();
+  S.conteoActivo=null;save();
+  closeModal('modal-resumen');
+  renderConteoActivo();renderSubalmacenes();renderHistorial();updateCfg();
+  showToast('Conteo cerrado y guardado ✓','success');
+}
+
+// ============================================================
+// HISTORIAL
+// ============================================================
+function renderHistorial(){
+  const list=document.getElementById('historial-list');
+  const entries=Object.values(S.conteos).sort((a,b)=>(b.cerrado||0)-(a.cerrado||0));
+  if(!entries.length){
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">🕐</div><div class="empty-text">Aún no hay conteos registrados.</div></div>`;
+    return;
+  }
+  list.innerHTML='';
+  entries.forEach(c=>{
+    const sub=SUBS.find(s=>s.key===c.subalmacen);
+    const fecha=new Date(c.cerrado||c.fecha).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const items=Object.values(c.items||{});
+    const negs=items.filter(i=>i.diferencia<0).length;
+    const prods=S.productos[c.subalmacen]||[];
+    const div=document.createElement('div');div.className='hist-item';
+    div.innerHTML=`<div class="hist-header">
+      <div class="hist-num">#${c.numero} — ${sub?.nombre||c.subalmacen}</div>
+      <div class="hist-date">${fecha}</div></div>
+      <div class="hist-stats">
+        <div class="hist-stat">Contados: <span>${items.length}/${prods.length}</span></div>
+        ${negs>0?`<div class="hist-stat" style="color:var(--danger)">Diferencias: <span style="color:var(--danger)">${negs}</span></div>`:'<div class="hist-stat" style="color:var(--accent2)">Sin diferencias ✓</div>'}
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn-outline" style="margin:0;padding:8px 12px;font-size:12px" onclick="verDetalle('${c.subalmacen}_${c.numero}')">Ver detalle</button>
+        <button class="btn-outline" style="margin:0;padding:8px 12px;font-size:12px" onclick="imprimirConteo('${c.subalmacen}_${c.numero}')">🖨️ Imprimir</button>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+function verDetalle(key){
+  const c=S.conteos[key];if(!c)return;
+  const sub=SUBS.find(s=>s.key===c.subalmacen);
+  const prods=S.productos[c.subalmacen]||[];
+  let html=`<div class="modal-title">#${c.numero} — ${sub?.nombre}</div>`;
+  prods.forEach(p=>{
+    const k=`${c.subalmacen}__${p.codigo}`;const it=c.items?.[k];if(!it)return;
+    const cls=it.diferencia<0?'neg':it.diferencia>0?'pos':'zero';const sign=it.diferencia>0?'+':'';
+    html+=`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <span style="flex:1">${p.nombre}</span>
+      <span class="diff-badge ${cls}">${sign}${it.diferencia.toFixed(2)} ${p.unidad}</span></div>`;
+  });
+  const ov=document.createElement('div');ov.className='modal-overlay open';
+  ov.innerHTML=`<div class="modal-sheet"><div class="modal-handle"></div>${html}
+    <button class="btn-primary" style="margin-top:16px" onclick="this.closest('.modal-overlay').remove()">Cerrar</button></div>`;
+  document.body.appendChild(ov);
+}
+
+// ============================================================
+// IMPRESIÓN
+// ============================================================
+function imprimirConteo(key){
+  const c=key?S.conteos[key]:S.conteoActivo;
+  if(!c){showToast('No hay conteo para imprimir','error');return;}
+  const sub=SUBS.find(s=>s.key===c.subalmacen);
+  const prods=S.productos[c.subalmacen]||[];
+  const fecha=new Date(c.fecha).toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+  let rows='';
+  prods.forEach(p=>{
+    const k=`${c.subalmacen}__${p.codigo}`;const it=c.items?.[k];
+    const fis=it?it.fisico.toFixed(2):'—';
+    const d=it?(it.diferencia>=0?'+':'')+it.diferencia.toFixed(2):'—';
+    const sty=it&&it.diferencia<0?'color:red;font-weight:bold':'';
+    rows+=`<tr><td>${p.nombre}</td><td style="text-align:center">${p.unidad}</td>
+      <td style="text-align:center">${fis}</td>
+      <td style="text-align:center;${sty}">${d}</td></tr>`;
+  });
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Conteo #${c.numero}</title>
+    <style>body{font-family:Arial,sans-serif;font-size:12px;margin:20px}h2{margin-bottom:4px}
+    .meta{color:#666;font-size:11px;margin-bottom:16px}table{width:100%;border-collapse:collapse}
+    th{background:#1F3864;color:white;padding:8px;text-align:left}td{padding:6px 8px;border-bottom:1px solid #eee}
+    tr:nth-child(even){background:#f9f9f9}@media print{button{display:none}}</style></head><body>
+    <h2>Conteo #${c.numero} — ${sub?.nombre||c.subalmacen}</h2>
+    <div class="meta">Fecha: ${fecha} · Cinépolis Pie de la Cuesta · Acapulco</div>
+    <table><thead><tr><th>Producto</th><th>Unidad</th><th>Físico</th><th>Diferencia</th></tr></thead>
+    <tbody>${rows}</tbody></table><br>
+    <button onclick="window.print()">🖨️ Imprimir</button></body></html>`);
+  w.document.close();
+}
+function imprimirActivo(){imprimirConteo(null);}
+
+// ============================================================
+// CONFIG
+// ============================================================
+function updateCfg(){
+  const total=Object.values(S.productos).reduce((s,a)=>s+a.length,0);
+  document.getElementById('cfg-productos').textContent=total;
+  document.getElementById('cfg-conteos').textContent=Object.keys(S.conteos).length;
+}
+function limpiarActivo(){
+  if(!S.conteoActivo){showToast('No hay conteo activo','error');return;}
+  if(confirm('¿Limpiar todos los datos del conteo actual?')){
+    S.conteoActivo.items={};save();renderConteoActivo();renderSubalmacenes();showToast('Conteo limpiado','success');
+  }
+}
+function handlePDFUpload(input){
+  const f=input.files[0];if(!f)return;
+  const st=document.getElementById('upload-status');
+  st.style.display='block';st.textContent='⏳ Procesando reporte Vista...';
+  setTimeout(()=>{st.textContent=`✓ ${f.name} recibido.`;showToast('Archivo recibido ✓','success');},1200);
+  input.value='';
+}
+function handleConfigUpload(input){
+  const f=input.files[0];if(!f)return;
+  showToast('Config recibida: '+f.name,'success');input.value='';
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show '+type;
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ============================================================
+// DEMO
+// ============================================================
+function loadDemo(){
+  S.productos={
+    'ALMACEN GENERAL':[
+      {codigo:'289',nombre:'Queso P/Nachos G.',unidad:'ONZ',categoria:'DUL / NACHOS',teorico:6720,frecuencia:'DIARIO',tieneDesglose:'SÍ',unidadXCaja:4,unidadXBolsa:140,reqConversion:'SÍ',unidadCaptura:'GRS',factorConversion:0.035274,taraCaja:0,taraBolsa:15},
+      {codigo:'462',nombre:'Maiz Palomero G.',unidad:'KGS',categoria:'DUL / PAL',teorico:382.5,frecuencia:'DIARIO',tieneDesglose:'NO',reqConversion:'NO'},
+      {codigo:'286',nombre:'Jarabe Refresco Cola BIB G.',unidad:'LTS',categoria:'DUL / BEBIDAS',teorico:399,frecuencia:'DIARIO',tieneDesglose:'NO',reqConversion:'SÍ',unidadCaptura:'GRS',factorConversion:0.001,taraCaja:500},
+      {codigo:'428',nombre:'Nachos G.',unidad:'GRS',categoria:'DUL / NACHOS',teorico:125640,frecuencia:'QUINCENAL',tieneDesglose:'NO',reqConversion:'NO'},
+      {codigo:'1200',nombre:'Pan Baguette Parmesano G.',unidad:'PZA',categoria:'BAGUIS / BGT',teorico:200,frecuencia:'ALTERNADO',tieneDesglose:'NO',reqConversion:'NO'},
+      {codigo:'566',nombre:'Papas Twister G.',unidad:'GRS',categoria:'BAGUIS / PAPA',teorico:108768,frecuencia:'DIARIO',tieneDesglose:'NO',reqConversion:'NO'},
+    ],
+    'SUB-DULCERIA':[
+      {codigo:'392',nombre:'Vaso 44 Oz Generico Extreme G.',unidad:'PZA',categoria:'DUL / BEBIDAS',teorico:1008,frecuencia:'DIARIO',tieneDesglose:'NO',reqConversion:'NO'},
+      {codigo:'286',nombre:'Jarabe Refresco Cola BIB G.',unidad:'LTS',categoria:'DUL / BEBIDAS',teorico:31.24,frecuencia:'DIARIO',tieneDesglose:'NO',reqConversion:'SÍ',unidadCaptura:'GRS',factorConversion:0.001,taraCaja:500},
+    ],
+    'SUB-CT':[
+      {codigo:'1200',nombre:'Pan Baguette Parmesano G.',unidad:'PZA',categoria:'BAGUIS / BGT',teorico:66,frecuencia:'DIARIO',tieneDesglose:'NO',reqConversion:'NO'},
+      {codigo:'470',nombre:'Leche G.',unidad:'LTS',categoria:'CAFE / C FRIAS / LACTEOS',teorico:12.62,frecuencia:'DIARIO',tieneDesglose:'NO',reqConversion:'NO'},
+    ]
+  };
+  save();renderSubalmacenes();updateCfg();showToast('Demo cargado ✓','success');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+load();
+applyDark();
+</script>
+</body>
+</html>
