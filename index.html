@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Inventario">
+<meta name="theme-color" content="#e8a020">
+<link rel="manifest" href="manifest.json">
+<title>Inventario · Cinépolis PDC</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0a0a0f;
+  --surface:   #13131a;
+  --surface2:  #1c1c26;
+  --border:    #2a2a3a;
+  --gold:      #e8a020;
+  --gold-dim:  #a06a10;
+  --text:      #f0f0f8;
+  --muted:     #7070a0;
+  --green:     #30d080;
+  --red:       #ff4560;
+  --blue:      #4090ff;
+  --radius:    12px;
+  --safe-top:  env(safe-area-inset-top, 0px);
+  --safe-bot:  env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  overflow: hidden;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; flex-direction: column; height: 100dvh; }
+.screen.active { display: flex; }
+
+/* ── TOPBAR ── */
+.topbar {
+  padding: calc(var(--safe-top) + 14px) 16px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0;
+}
+.topbar .back {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--surface2); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text); font-size: 18px; flex-shrink: 0;
+}
+.topbar h2 { font-size: 17px; font-weight: 700; flex: 1; line-height: 1.2; }
+.topbar .badge {
+  background: var(--gold); color: #000; font-size: 11px;
+  font-weight: 700; padding: 3px 8px; border-radius: 20px;
+  font-family: 'Space Mono', monospace;
+}
+
+/* ── SCROLL AREA ── */
+.scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.scroll::-webkit-scrollbar { display: none; }
+
+/* ══════════════════════════════
+   SCREEN 0: HOME
+══════════════════════════════ */
+#screen-home {
+  background: var(--bg);
+}
+.home-header {
+  padding: calc(var(--safe-top) + 28px) 20px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.home-logo {
+  font-size: 11px; font-weight: 700; letter-spacing: 3px;
+  color: var(--gold); text-transform: uppercase; margin-bottom: 8px;
+  font-family: 'Space Mono', monospace;
+}
+.home-title {
+  font-size: 26px; font-weight: 800; line-height: 1.1;
+  color: var(--text);
+}
+.home-sub {
+  font-size: 13px; color: var(--muted); margin-top: 6px;
+}
+.home-date {
+  font-size: 12px; color: var(--gold); margin-top: 10px;
+  font-family: 'Space Mono', monospace;
+}
+
+.home-scroll { flex: 1; overflow-y: auto; padding: 20px 16px; padding-bottom: calc(var(--safe-bot) + 20px); }
+.home-scroll::-webkit-scrollbar { display: none; }
+
+.section-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 3px;
+  color: var(--muted); text-transform: uppercase;
+  margin-bottom: 12px; padding-left: 4px;
+}
+
+/* Almacen cards */
+.almacen-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 14px;
+  transition: border-color .15s, background .15s;
+  -webkit-user-select: none;
+}
+.almacen-card:active { background: var(--surface2); border-color: var(--gold-dim); }
+.almacen-icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.almacen-info { flex: 1; }
+.almacen-name { font-size: 15px; font-weight: 700; }
+.almacen-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.almacen-arrow { color: var(--muted); font-size: 18px; }
+
+/* Quick stats */
+.stats-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 14px 12px;
+}
+.stat-val {
+  font-size: 22px; font-weight: 800;
+  font-family: 'Space Mono', monospace;
+  color: var(--gold);
+}
+.stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+/* Action buttons */
+.action-row { display: flex; gap: 10px; margin-bottom: 20px; }
+.btn {
+  flex: 1; padding: 13px 12px; border-radius: var(--radius);
+  border: none; cursor: pointer; font-family: 'Syne', sans-serif;
+  font-size: 13px; font-weight: 700; display: flex;
+  align-items: center; justify-content: center; gap: 6px;
+  transition: opacity .15s;
+}
+.btn:active { opacity: .7; }
+.btn-gold { background: var(--gold); color: #000; }
+.btn-outline {
+  background: transparent; color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-full { width: 100%; margin-bottom: 10px; }
+.btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red); }
+
+/* ══════════════════════════════
+   SCREEN 1: ALMACEN (categorías)
+══════════════════════════════ */
+.search-wrap {
+  padding: 12px 16px; background: var(--surface); flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+.search-input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px;
+  color: var(--text); font-family: 'Syne', sans-serif; font-size: 14px;
+  outline: none;
+}
+.search-input::placeholder { color: var(--muted); }
+.search-input:focus { border-color: var(--gold-dim); }
+
+.cat-list { padding: 12px 16px; padding-bottom: calc(var(--safe-bot) + 16px); }
+.cat-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 15px 16px;
+  margin-bottom: 8px; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: border-color .15s;
+}
+.cat-item:active { border-color: var(--gold-dim); }
+.cat-name { font-size: 14px; font-weight: 700; }
+.cat-count { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.cat-progress {
+  width: 48px; height: 48px; flex-shrink: 0;
+}
+.cat-progress svg { transform: rotate(-90deg); }
+.cat-progress circle.track { fill: none; stroke: var(--border); stroke-width: 4; }
+.cat-progress circle.fill  { fill: none; stroke: var(--green); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset .4s; }
+
+/* ══════════════════════════════
+   SCREEN 2: ITEMS (conteo)
+══════════════════════════════ */
+.items-list { padding: 12px 16px; padding-bottom: calc(var(--safe-bot) + 80px); }
+
+.item-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 14px 12px;
+  margin-bottom: 10px; transition: border-color .2s;
+}
+.item-card.contado { border-color: var(--green); }
+.item-card.diferencia { border-color: var(--red); }
+
+.item-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.item-code {
+  font-size: 10px; font-weight: 700; font-family: 'Space Mono', monospace;
+  color: var(--gold); background: rgba(232,160,32,.12);
+  padding: 3px 7px; border-radius: 5px; flex-shrink: 0; margin-top: 1px;
+}
+.item-name { font-size: 14px; font-weight: 700; line-height: 1.3; flex: 1; }
+
+.item-nums {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px; margin-bottom: 12px;
+}
+.num-block { text-align: center; }
+.num-label { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+.num-val {
+  font-size: 18px; font-weight: 800; font-family: 'Space Mono', monospace;
+  margin-top: 2px;
+}
+.num-val.teorico { color: var(--blue); }
+.num-val.fisico  { color: var(--text); }
+.num-val.dif.pos { color: var(--green); }
+.num-val.dif.neg { color: var(--red); }
+.num-val.dif.neu { color: var(--muted); }
+.num-uom { font-size: 9px; color: var(--muted); margin-top: 1px; }
+
+/* Counter control */
+.counter-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.cnt-btn {
+  width: 44px; height: 44px; border-radius: 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-size: 22px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: background .1s;
+}
+.cnt-btn:active { background: var(--border); }
+.cnt-btn.add { background: var(--gold); color: #000; border-color: var(--gold); }
+.cnt-btn.add:active { background: var(--gold-dim); }
+.cnt-input {
+  flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 8px;
+  color: var(--text); font-family: 'Space Mono', monospace;
+  font-size: 20px; font-weight: 700; text-align: center;
+  outline: none;
+}
+.cnt-input:focus { border-color: var(--gold-dim); }
+
+/* Float save bar */
+.float-bar {
+  position: fixed; bottom: calc(var(--safe-bot) + 16px);
+  left: 16px; right: 16px;
+  background: var(--gold); border-radius: var(--radius);
+  padding: 14px 20px; cursor: pointer;
+  display: none; align-items: center; justify-content: space-between;
+  box-shadow: 0 8px 32px rgba(232,160,32,.4);
+  z-index: 100;
+}
+.float-bar.visible { display: flex; }
+.float-bar-text { font-size: 14px; font-weight: 700; color: #000; }
+.float-bar-sub  { font-size: 11px; color: rgba(0,0,0,.6); }
+.float-bar-icon { font-size: 22px; }
+
+/* ══════════════════════════════
+   SCREEN 3: HISTORIAL
+══════════════════════════════ */
+.hist-list { padding: 12px 16px; padding-bottom: calc(var(--safe-bot) + 16px); }
+.hist-session {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 10px; overflow: hidden;
+}
+.hist-session-hdr {
+  padding: 14px 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hist-session-title { font-size: 13px; font-weight: 700; }
+.hist-session-meta  { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.hist-session-badge {
+  font-size: 11px; font-weight: 700; font-family: 'Space Mono', monospace;
+  padding: 3px 8px; border-radius: 20px;
+}
+.hist-session-badge.ok  { background: rgba(48,208,128,.15); color: var(--green); }
+.hist-session-badge.err { background: rgba(255,69,96,.15);  color: var(--red); }
+.hist-session-body { display: none; border-top: 1px solid var(--border); }
+.hist-session-body.open { display: block; }
+.hist-row {
+  padding: 10px 16px; display: flex; align-items: center; gap:10px;
+  border-bottom: 1px solid var(--border); font-size: 12px;
+}
+.hist-row:last-child { border-bottom: none; }
+.hist-row-name { flex: 1; color: var(--text); }
+.hist-row-nums { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); }
+.hist-dif { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; }
+.hist-dif.pos { color: var(--green); }
+.hist-dif.neg { color: var(--red); }
+.hist-dif.neu { color: var(--muted); }
+
+/* ══════════════════════════════
+   SCREEN 4: ADMIN / CARGAR CSV
+══════════════════════════════ */
+.admin-scroll { flex: 1; overflow-y: auto; padding: 20px 16px; padding-bottom: calc(var(--safe-bot) + 20px); }
+.admin-scroll::-webkit-scrollbar { display: none; }
+
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  padding: 32px 20px; text-align: center; cursor: pointer;
+  margin-bottom: 16px; transition: border-color .2s;
+}
+.upload-zone:hover, .upload-zone.drag { border-color: var(--gold); }
+.upload-icon { font-size: 40px; margin-bottom: 12px; }
+.upload-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.upload-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
+#file-input { display: none; }
+
+.preview-table {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; margin-bottom: 16px;
+}
+.preview-row {
+  display: flex; align-items: center; padding: 10px 14px;
+  border-bottom: 1px solid var(--border); font-size: 12px; gap: 10px;
+}
+.preview-row:last-child { border-bottom: none; }
+.preview-row.header { background: var(--surface2); font-weight: 700; font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+.preview-code { width: 52px; font-family: 'Space Mono', monospace; color: var(--gold); flex-shrink: 0; }
+.preview-name { flex: 1; }
+.preview-alm  { width: 100px; color: var(--muted); font-size: 11px; flex-shrink: 0; }
+.preview-teorico { width: 64px; text-align: right; font-family: 'Space Mono', monospace; flex-shrink: 0; }
+
+.info-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px;
+}
+.info-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.info-card p  { font-size: 12px; color: var(--muted); line-height: 1.6; }
+.info-card code {
+  background: var(--bg); border: 1px solid var(--border);
+  padding: 2px 6px; border-radius: 4px; font-size: 11px;
+  font-family: 'Space Mono', monospace; color: var(--gold);
+}
+
+/* ══════════════════════════════
+   TOAST
+══════════════════════════════ */
+.toast {
+  position: fixed; bottom: calc(var(--safe-bot) + 90px); left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 10px 18px; border-radius: 30px;
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+  opacity: 0; transition: opacity .25s, transform .25s;
+  pointer-events: none; z-index: 200;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.ok    { border-color: var(--green); color: var(--green); }
+.toast.error { border-color: var(--red);   color: var(--red); }
+
+/* ══════════════════════════════
+   NAV BAR
+══════════════════════════════ */
+.navbar {
+  display: flex; background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding-bottom: var(--safe-bot);
+  flex-shrink: 0;
+}
+.nav-item {
+  flex: 1; padding: 10px 4px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  transition: color .15s;
+}
+.nav-item .nav-icon { font-size: 22px; }
+.nav-item .nav-label { font-size: 10px; font-weight: 700; letter-spacing: .5px; color: var(--muted); }
+.nav-item.active .nav-label { color: var(--gold); }
+.nav-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--gold); position: absolute; top: -2px; right: -4px;
+}
+
+/* Misc */
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+.empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+.empty-state p { font-size: 14px; line-height: 1.6; }
+
+/* progress ring helper */
+.ring-wrap { position: relative; }
+.ring-pct {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  font-size: 9px; font-weight: 700;
+  font-family: 'Space Mono', monospace; color: var(--green);
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════
+     SCREEN 0 : HOME
+══════════════════════════════ -->
+<div id="screen-home" class="screen active">
+  <div class="home-header">
+    <div class="home-logo">Cinépolis · PDC</div>
+    <div class="home-title">Control de<br>Inventario</div>
+    <div class="home-sub">Conteo físico multi-almacén</div>
+    <div class="home-date" id="home-date"></div>
+  </div>
+
+  <div class="home-scroll">
+    <div class="stats-row" id="home-stats"></div>
+
+    <div class="section-label">Almacenes</div>
+
+    <div class="almacen-card" onclick="openAlmacen('ALMACEN GENERAL')">
+      <div class="almacen-icon">🏭</div>
+      <div class="almacen-info">
+        <div class="almacen-name">Almacén General</div>
+        <div class="almacen-meta" id="meta-AG">Cargando...</div>
+      </div>
+      <div class="almacen-arrow">›</div>
+    </div>
+
+    <div class="almacen-card" onclick="openAlmacen('SUB-PUNTO VENTA')">
+      <div class="almacen-icon">🎬</div>
+      <div class="almacen-info">
+        <div class="almacen-name">Sub-Punto de Venta</div>
+        <div class="almacen-meta" id="meta-SPV">Cargando...</div>
+      </div>
+      <div class="almacen-arrow">›</div>
+    </div>
+
+    <div class="almacen-card" onclick="openAlmacen('SUB-SPYRAL-LOBBY')">
+      <div class="almacen-icon">🌀</div>
+      <div class="almacen-info">
+        <div class="almacen-name">Sub-Spyral Lobby</div>
+        <div class="almacen-meta" id="meta-SSL">Cargando...</div>
+      </div>
+      <div class="almacen-arrow">›</div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-label">Acciones rápidas</div>
+
+    <div class="action-row">
+      <button class="btn btn-gold" onclick="navTo('historial')">📋 Historial</button>
+      <button class="btn btn-outline" onclick="navTo('admin')">⚙️ Admin</button>
+    </div>
+
+    <button class="btn btn-outline btn-full" onclick="exportarResumen()" style="color:var(--green);border-color:var(--green)">
+      ↓ Exportar resumen CSV
+    </button>
+
+  </div>
+
+  <div class="navbar" id="nav-home">
+    <div class="nav-item active" onclick="navTo('home')">
+      <div class="nav-icon">🏠</div><div class="nav-label">Inicio</div>
+    </div>
+    <div class="nav-item" onclick="navTo('historial')">
+      <div class="nav-icon">📋</div><div class="nav-label">Historial</div>
+    </div>
+    <div class="nav-item" onclick="navTo('admin')">
+      <div class="nav-icon">⚙️</div><div class="nav-label">Admin</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     SCREEN 1 : ALMACEN (categorías)
+══════════════════════════════ -->
+<div id="screen-almacen" class="screen">
+  <div class="topbar">
+    <button class="back" onclick="navTo('home')">‹</button>
+    <h2 id="almacen-title">Almacén</h2>
+    <div class="badge" id="almacen-badge">0</div>
+  </div>
+  <div class="search-wrap">
+    <input class="search-input" type="search" placeholder="Buscar artículo..." id="search-input" oninput="filterSearch()" autocomplete="off">
+  </div>
+  <div class="scroll">
+    <div class="cat-list" id="cat-list"></div>
+    <div id="search-results" class="cat-list" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     SCREEN 2 : ITEMS (conteo)
+══════════════════════════════ -->
+<div id="screen-items" class="screen">
+  <div class="topbar">
+    <button class="back" onclick="backToAlmacen()">‹</button>
+    <h2 id="items-title">Categoría</h2>
+    <div class="badge" id="items-badge">0/0</div>
+  </div>
+  <div class="scroll">
+    <div class="items-list" id="items-list"></div>
+  </div>
+  <div class="float-bar" id="float-bar" onclick="guardarConteo()">
+    <div>
+      <div class="float-bar-text">💾 Guardar conteo</div>
+      <div class="float-bar-sub" id="float-bar-sub">0 artículos capturados</div>
+    </div>
+    <div class="float-bar-icon">›</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     SCREEN 3 : HISTORIAL
+══════════════════════════════ -->
+<div id="screen-historial" class="screen">
+  <div class="topbar">
+    <button class="back" onclick="navTo('home')">‹</button>
+    <h2>Historial de conteos</h2>
+  </div>
+  <div class="scroll">
+    <div class="hist-list" id="hist-list"></div>
+  </div>
+  <div class="navbar">
+    <div class="nav-item" onclick="navTo('home')">
+      <div class="nav-icon">🏠</div><div class="nav-label">Inicio</div>
+    </div>
+    <div class="nav-item active" onclick="navTo('historial')">
+      <div class="nav-icon">📋</div><div class="nav-label">Historial</div>
+    </div>
+    <div class="nav-item" onclick="navTo('admin')">
+      <div class="nav-icon">⚙️</div><div class="nav-label">Admin</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     SCREEN 4 : ADMIN
+══════════════════════════════ -->
+<div id="screen-admin" class="screen">
+  <div class="topbar">
+    <button class="back" onclick="navTo('home')">‹</button>
+    <h2>Administración</h2>
+  </div>
+  <div class="admin-scroll">
+
+    <div class="section-label">Cargar inventario teórico</div>
+
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
+         ondragover="event.preventDefault();this.classList.add('drag')"
+         ondragleave="this.classList.remove('drag')"
+         ondrop="handleDrop(event)">
+      <div class="upload-icon">📂</div>
+      <div class="upload-title">Seleccionar archivo CSV</div>
+      <div class="upload-sub">Soporta el formato<br><strong>Historical-StockVariance</strong> de Vista</div>
+    </div>
+    <input type="file" id="file-input" accept=".csv" onchange="handleFileInput(event)">
+
+    <div id="csv-preview" style="display:none">
+      <div class="preview-table" id="preview-table"></div>
+      <button class="btn btn-gold btn-full" onclick="aplicarCSV()">✓ Aplicar como teórico actual</button>
+      <button class="btn btn-outline btn-full" onclick="cancelarCSV()">Cancelar</button>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-label">Estado actual</div>
+
+    <div class="info-card">
+      <h4>Inventario teórico cargado</h4>
+      <p id="admin-teorico-info">Cargando...</p>
+    </div>
+
+    <div class="info-card">
+      <h4>Cómo cargar el CSV</h4>
+      <p>
+        1. Desde Vista, exporta el reporte <code>Historical-StockVariance</code> en formato CSV.<br><br>
+        2. Sube el archivo aquí. La app detecta automáticamente las columnas y unifica SUB-TAQUILLA, SUB-DULCERIA y SUB-CT bajo <strong>SUB-PUNTO VENTA</strong>.<br><br>
+        3. Presiona <strong>Aplicar</strong> para reemplazar el teórico actual.
+      </p>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-label">Peligro</div>
+    <button class="btn btn-danger btn-full" onclick="limpiarConteos()">🗑 Borrar todos los conteos</button>
+    <button class="btn btn-danger btn-full" style="margin-top:0" onclick="limpiarTodo()">⚠️ Resetear todo (conteos + teórico)</button>
+
+  </div>
+  <div class="navbar">
+    <div class="nav-item" onclick="navTo('home')">
+      <div class="nav-icon">🏠</div><div class="nav-label">Inicio</div>
+    </div>
+    <div class="nav-item" onclick="navTo('historial')">
+      <div class="nav-icon">📋</div><div class="nav-label">Historial</div>
+    </div>
+    <div class="nav-item active" onclick="navTo('admin')">
+      <div class="nav-icon">⚙️</div><div class="nav-label">Admin</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="catalogo.js"></script>
+<script>
+// ══════════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ══════════════════════════════════════════════════
+let catalogo    = [];   // artículos con teórico actual
+let conteos     = {};   // { "ALMACEN|codigo": { fisico, ts } }
+let historial   = [];   // [ { id, ts, almacen, categoria, items:[{codigo,nombre,uom,teorico,fisico}] } ]
+
+let currentAlmacen  = '';
+let currentCategoria= '';
+let pendingCounts   = {}; // cambios no guardados en screen-items
+let csvParsed       = null;
+
+const ALMACEN_MAP = {
+  'SUB-TAQUILLA':   'SUB-PUNTO VENTA',
+  'SUB-DULCERIA':   'SUB-PUNTO VENTA',
+  'SUB-CT':         'SUB-PUNTO VENTA',
+};
+
+// ══════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════
+function init() {
+  loadStorage();
+  if (!catalogo.length) {
+    catalogo = CATALOGO_INICIAL.map(it => ({
+      ...it,
+      almacen: ALMACEN_MAP[it.almacen] || it.almacen
+    }));
+    // dedup
+    const seen = new Set();
+    catalogo = catalogo.filter(it => {
+      const k = `${it.almacen}|${it.codigo}`;
+      if (seen.has(k)) return false;
+      seen.add(k); return true;
+    });
+    saveStorage();
+  }
+  renderHome();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  STORAGE
+// ══════════════════════════════════════════════════
+function saveStorage() {
+  try {
+    localStorage.setItem('inv_catalogo', JSON.stringify(catalogo));
+    localStorage.setItem('inv_conteos',  JSON.stringify(conteos));
+    localStorage.setItem('inv_historial',JSON.stringify(historial));
+  } catch(e) {}
+}
+
+function loadStorage() {
+  try {
+    const c = localStorage.getItem('inv_catalogo');
+    const co= localStorage.getItem('inv_conteos');
+    const h = localStorage.getItem('inv_historial');
+    if (c)  catalogo  = JSON.parse(c);
+    if (co) conteos   = JSON.parse(co);
+    if (h)  historial = JSON.parse(h);
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════════════
+//  NAV
+// ══════════════════════════════════════════════════
+function navTo(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  if (name === 'home')     renderHome();
+  if (name === 'historial') renderHistorial();
+  if (name === 'admin')    renderAdmin();
+  window.scrollTo(0,0);
+}
+
+function openAlmacen(almacen) {
+  currentAlmacen = almacen;
+  document.getElementById('search-input').value = '';
+  document.getElementById('cat-list').style.display = '';
+  document.getElementById('search-results').style.display = 'none';
+  renderAlmacen();
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-almacen').classList.add('active');
+}
+
+function openCategoria(cat) {
+  currentCategoria = cat;
+  pendingCounts = {};
+  renderItems();
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-items').classList.add('active');
+  updateFloatBar();
+}
+
+function backToAlmacen() {
+  if (Object.keys(pendingCounts).length > 0) {
+    if (!confirm('¿Salir sin guardar los cambios pendientes?')) return;
+  }
+  pendingCounts = {};
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-almacen').classList.add('active');
+  renderAlmacen();
+}
+
+// ══════════════════════════════════════════════════
+//  HOME
+// ══════════════════════════════════════════════════
+function renderHome() {
+  const now = new Date();
+  document.getElementById('home-date').textContent =
+    now.toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+  const almacenes = ['ALMACEN GENERAL','SUB-PUNTO VENTA','SUB-SPYRAL-LOBBY'];
+  const metaIds   = ['meta-AG','meta-SPV','meta-SSL'];
+
+  let totalItems = 0, totalContados = 0, totalDif = 0;
+
+  almacenes.forEach((alm, i) => {
+    const items = catalogo.filter(x => x.almacen === alm);
+    const contados = items.filter(x => conteos[`${alm}|${x.codigo}`] !== undefined).length;
+    document.getElementById(metaIds[i]).textContent =
+      `${items.length} artículos · ${contados} contados`;
+    totalItems += items.length;
+    totalContados += contados;
+    items.forEach(it => {
+      const c = conteos[`${alm}|${it.codigo}`];
+      if (c !== undefined) totalDif += Math.abs(c.fisico - it.teorico);
+    });
+  });
+
+  document.getElementById('home-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-val">${totalContados}<span style="font-size:13px;color:var(--muted)">/${totalItems}</span></div>
+      <div class="stat-label">Artículos contados</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" style="color:${totalDif>0?'var(--red)':'var(--green)'}">${fmt(totalDif)}</div>
+      <div class="stat-label">Variación total acumulada</div>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════════
+//  ALMACEN (categorías)
+// ══════════════════════════════════════════════════
+function renderAlmacen() {
+  const titles = {
+    'ALMACEN GENERAL':   'Almacén General',
+    'SUB-PUNTO VENTA':   'Sub-Punto de Venta',
+    'SUB-SPYRAL-LOBBY':  'Sub-Spyral Lobby',
+  };
+  document.getElementById('almacen-title').textContent = titles[currentAlmacen] || currentAlmacen;
+
+  const items = catalogo.filter(x => x.almacen === currentAlmacen);
+  document.getElementById('almacen-badge').textContent = items.length;
+
+  // group by category
+  const cats = {};
+  items.forEach(it => {
+    if (!cats[it.categoria]) cats[it.categoria] = [];
+    cats[it.categoria].push(it);
+  });
+
+  const list = document.getElementById('cat-list');
+  list.innerHTML = '';
+
+  Object.keys(cats).sort().forEach(cat => {
+    const citems = cats[cat];
+    const contados = citems.filter(x => conteos[`${currentAlmacen}|${x.codigo}`] !== undefined).length;
+    const pct = citems.length ? Math.round(contados / citems.length * 100) : 0;
+    const r = 20, circ = 2 * Math.PI * r;
+    const offset = circ - (pct / 100) * circ;
+
+    const div = document.createElement('div');
+    div.className = 'cat-item';
+    div.onclick = () => openCategoria(cat);
+    div.innerHTML = `
+      <div style="flex:1">
+        <div class="cat-name">${cat}</div>
+        <div class="cat-count">${contados}/${citems.length} contados</div>
+      </div>
+      <div class="cat-progress ring-wrap">
+        <svg width="48" height="48" viewBox="0 0 48 48">
+          <circle class="track" cx="24" cy="24" r="${r}"/>
+          <circle class="fill" cx="24" cy="24" r="${r}"
+            stroke-dasharray="${circ}"
+            stroke-dashoffset="${offset}"
+            ${pct===0?'style="display:none"':''}/>
+        </svg>
+        <div class="ring-pct">${pct}%</div>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  SEARCH
+// ══════════════════════════════════════════════════
+function filterSearch() {
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  const catList = document.getElementById('cat-list');
+  const srList  = document.getElementById('search-results');
+
+  if (!q) {
+    catList.style.display = '';
+    srList.style.display  = 'none';
+    srList.innerHTML = '';
+    return;
+  }
+
+  catList.style.display = 'none';
+  srList.style.display  = '';
+
+  const items = catalogo.filter(x =>
+    x.almacen === currentAlmacen &&
+    (x.nombre.toLowerCase().includes(q) || x.codigo.includes(q))
+  );
+
+  if (!items.length) {
+    srList.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><p>Sin resultados</p></div>';
+    return;
+  }
+
+  srList.innerHTML = '';
+  items.forEach(it => {
+    const key = `${currentAlmacen}|${it.codigo}`;
+    const c   = conteos[key];
+    const fisico = c !== undefined ? c.fisico : null;
+    const dif = fisico !== null ? fisico - it.teorico : null;
+
+    const div = document.createElement('div');
+    div.className = 'cat-item';
+    div.style.flexDirection = 'column';
+    div.style.alignItems    = 'flex-start';
+    div.onclick = () => {
+      document.getElementById('search-input').value = '';
+      filterSearch();
+      currentCategoria = it.categoria;
+      pendingCounts = {};
+      renderItems(it.codigo);
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-items').classList.add('active');
+    };
+    div.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;width:100%">
+        <span style="font-size:10px;font-family:'Space Mono',monospace;color:var(--gold);background:rgba(232,160,32,.12);padding:2px 6px;border-radius:4px">${it.codigo}</span>
+        <span style="font-size:13px;font-weight:700;flex:1">${it.nombre}</span>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:6px;font-size:11px;font-family:'Space Mono',monospace">
+        <span style="color:var(--blue)">T: ${fmt(it.teorico)}</span>
+        ${fisico!==null?`<span style="color:var(--text)">F: ${fmt(fisico)}</span>`:''}
+        ${dif!==null?`<span style="color:${dif>0?'var(--green)':dif<0?'var(--red)':'var(--muted)'}">Δ ${dif>0?'+':''}${fmt(dif)}</span>`:''}
+        <span style="color:var(--muted)">${it.uom}</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:3px">${it.categoria}</div>
+    `;
+    srList.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  ITEMS (conteo)
+// ══════════════════════════════════════════════════
+function renderItems(focusCode) {
+  const items = catalogo.filter(x => x.almacen === currentAlmacen && x.categoria === currentCategoria);
+  document.getElementById('items-title').textContent = currentCategoria;
+
+  const list = document.getElementById('items-list');
+  list.innerHTML = '';
+
+  items.forEach(it => {
+    const key    = `${currentAlmacen}|${it.codigo}`;
+    const saved  = conteos[key];
+    const fisico = pendingCounts[key] !== undefined ? pendingCounts[key] :
+                   saved ? saved.fisico : '';
+    const dif    = fisico !== '' ? Number(fisico) - it.teorico : null;
+
+    const card = document.createElement('div');
+    card.id = `card-${it.codigo}`;
+    card.className = 'item-card' + (fisico !== '' ? (dif !== 0 ? ' diferencia' : ' contado') : '');
+    if (fisico !== '' && dif === 0) { card.className = 'item-card contado'; }
+
+    const difClass = dif === null ? 'neu' : dif > 0 ? 'pos' : dif < 0 ? 'neg' : 'neu';
+    const difTxt   = dif === null ? '—' : (dif > 0 ? '+' : '') + fmt(dif);
+
+    card.innerHTML = `
+      <div class="item-header">
+        <div class="item-code">${it.codigo}</div>
+        <div class="item-name">${it.nombre}</div>
+      </div>
+      <div class="item-nums">
+        <div class="num-block">
+          <div class="num-label">Teórico</div>
+          <div class="num-val teorico">${fmt(it.teorico)}</div>
+          <div class="num-uom">${it.uom}</div>
+        </div>
+        <div class="num-block">
+          <div class="num-label">Físico</div>
+          <div class="num-val fisico" id="disp-${it.codigo}">${fisico !== '' ? fmt(fisico) : '—'}</div>
+          <div class="num-uom">${it.uom}</div>
+        </div>
+        <div class="num-block">
+          <div class="num-label">Diferencia</div>
+          <div class="num-val dif ${difClass}" id="dif-${it.codigo}">${difTxt}</div>
+          <div class="num-uom">${it.uom}</div>
+        </div>
+      </div>
+      <div class="counter-row">
+        <button class="cnt-btn" onclick="adjustCount('${it.codigo}', ${it.teorico}, -1)">−</button>
+        <input class="cnt-input" id="inp-${it.codigo}" type="number" inputmode="decimal"
+          value="${fisico !== '' ? fisico : ''}" placeholder="0"
+          onchange="setCount('${it.codigo}', ${it.teorico}, this.value)"
+          oninput="setCount('${it.codigo}', ${it.teorico}, this.value)">
+        <button class="cnt-btn add" onclick="adjustCount('${it.codigo}', ${it.teorico}, 1)">+</button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+
+  updateItemsBadge();
+  updateFloatBar();
+
+  if (focusCode) {
+    setTimeout(() => {
+      const el = document.getElementById(`inp-${focusCode}`);
+      if (el) { el.scrollIntoView({behavior:'smooth', block:'center'}); el.focus(); }
+    }, 200);
+  }
+}
+
+function adjustCount(codigo, teorico, delta) {
+  const key = `${currentAlmacen}|${codigo}`;
+  const inp = document.getElementById(`inp-${codigo}`);
+  const cur = pendingCounts[key] !== undefined ? pendingCounts[key] :
+              conteos[key] ? conteos[key].fisico : teorico;
+  const nuevo = Math.max(0, Number(cur) + delta);
+  inp.value = nuevo;
+  setCount(codigo, teorico, nuevo);
+}
+
+function setCount(codigo, teorico, val) {
+  const key = `${currentAlmacen}|${codigo}`;
+  const num = val === '' || val === null ? '' : Number(val);
+
+  if (num === '') {
+    delete pendingCounts[key];
+  } else {
+    pendingCounts[key] = num;
+  }
+
+  const fisico = num === '' ? null : num;
+  const dif    = fisico !== null ? fisico - teorico : null;
+
+  const dispEl = document.getElementById(`disp-${codigo}`);
+  const difEl  = document.getElementById(`dif-${codigo}`);
+  const card   = document.getElementById(`card-${codigo}`);
+
+  if (dispEl) dispEl.textContent = fisico !== null ? fmt(fisico) : '—';
+  if (difEl) {
+    difEl.textContent = dif !== null ? (dif > 0 ? '+' : '') + fmt(dif) : '—';
+    difEl.className = 'num-val dif ' + (dif === null ? 'neu' : dif > 0 ? 'pos' : dif < 0 ? 'neg' : 'neu');
+  }
+  if (card) {
+    card.className = 'item-card' + (fisico !== null ? (dif !== 0 ? ' diferencia' : ' contado') : '');
+    if (fisico !== null && dif === 0) card.className = 'item-card contado';
+  }
+
+  updateItemsBadge();
+  updateFloatBar();
+}
+
+function updateItemsBadge() {
+  const items = catalogo.filter(x => x.almacen === currentAlmacen && x.categoria === currentCategoria);
+  const total = items.length;
+  const done  = items.filter(x => {
+    const key = `${currentAlmacen}|${x.codigo}`;
+    return pendingCounts[key] !== undefined || conteos[key] !== undefined;
+  }).length;
+  document.getElementById('items-badge').textContent = `${done}/${total}`;
+}
+
+function updateFloatBar() {
+  const n = Object.keys(pendingCounts).length;
+  const bar = document.getElementById('float-bar');
+  const sub = document.getElementById('float-bar-sub');
+  if (n > 0) {
+    bar.classList.add('visible');
+    sub.textContent = `${n} artículo${n>1?'s':''} con cambios`;
+  } else {
+    bar.classList.remove('visible');
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  GUARDAR CONTEO
+// ══════════════════════════════════════════════════
+function guardarConteo() {
+  if (!Object.keys(pendingCounts).length) return;
+
+  const ts = new Date().toISOString();
+  const items = catalogo.filter(x => x.almacen === currentAlmacen && x.categoria === currentCategoria);
+
+  // Merge pending into conteos
+  Object.entries(pendingCounts).forEach(([key, fisico]) => {
+    conteos[key] = { fisico, ts };
+  });
+
+  // Build historial entry
+  const entry = {
+    id: Date.now(),
+    ts,
+    almacen: currentAlmacen,
+    categoria: currentCategoria,
+    items: items
+      .filter(x => pendingCounts[`${currentAlmacen}|${x.codigo}`] !== undefined)
+      .map(x => ({
+        codigo: x.codigo,
+        nombre: x.nombre,
+        uom:    x.uom,
+        teorico: x.teorico,
+        fisico: pendingCounts[`${currentAlmacen}|${x.codigo}`]
+      }))
+  };
+  historial.unshift(entry);
+
+  pendingCounts = {};
+  saveStorage();
+  toast('✓ Conteo guardado', 'ok');
+  updateFloatBar();
+  renderItems();
+  renderAlmacen();
+}
+
+// ══════════════════════════════════════════════════
+//  HISTORIAL
+// ══════════════════════════════════════════════════
+function renderHistorial() {
+  const list = document.getElementById('hist-list');
+  if (!historial.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Aún no hay conteos guardados</p></div>';
+    return;
+  }
+  list.innerHTML = '';
+  historial.forEach(entry => {
+    const fecha = new Date(entry.ts).toLocaleString('es-MX', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const difs  = entry.items.filter(x => x.fisico !== x.teorico).length;
+    const almacenLabel = {
+      'ALMACEN GENERAL': 'Almacén General',
+      'SUB-PUNTO VENTA': 'Sub-Punto de Venta',
+      'SUB-SPYRAL-LOBBY': 'Sub-Spyral Lobby'
+    }[entry.almacen] || entry.almacen;
+
+    const div = document.createElement('div');
+    div.className = 'hist-session';
+    div.innerHTML = `
+      <div class="hist-session-hdr" onclick="toggleHist(this)">
+        <div>
+          <div class="hist-session-title">${almacenLabel} · ${entry.categoria}</div>
+          <div class="hist-session-meta">${fecha} · ${entry.items.length} artículos</div>
+        </div>
+        <span class="hist-session-badge ${difs>0?'err':'ok'}">${difs>0?difs+' dif.':'✓ OK'}</span>
+      </div>
+      <div class="hist-session-body">
+        ${entry.items.map(it => {
+          const dif = it.fisico - it.teorico;
+          const cls = dif > 0 ? 'pos' : dif < 0 ? 'neg' : 'neu';
+          const txt = dif > 0 ? '+' + fmt(dif) : fmt(dif);
+          return `
+            <div class="hist-row">
+              <div style="font-size:10px;font-family:'Space Mono',monospace;color:var(--gold);width:44px;flex-shrink:0">${it.codigo}</div>
+              <div class="hist-row-name">${it.nombre}</div>
+              <div class="hist-row-nums">${fmt(it.teorico)}→${fmt(it.fisico)}</div>
+              <div class="hist-dif ${cls}">${txt}</div>
+            </div>`;
+        }).join('')}
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function toggleHist(hdr) {
+  const body = hdr.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+// ══════════════════════════════════════════════════
+//  ADMIN: cargar CSV
+// ══════════════════════════════════════════════════
+function renderAdmin() {
+  document.getElementById('admin-teorico-info').textContent =
+    `${catalogo.length} artículos cargados en ${[...new Set(catalogo.map(x=>x.almacen))].length} almacenes.`;
+  document.getElementById('csv-preview').style.display = 'none';
+  csvParsed = null;
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) processCSV(file);
+}
+
+function handleFileInput(e) {
+  const file = e.target.files[0];
+  if (file) processCSV(file);
+  e.target.value = '';
+}
+
+function processCSV(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const text = e.target.result;
+      const parsed = parseStockVarianceCSV(text);
+      if (!parsed.length) { toast('No se encontraron artículos', 'error'); return; }
+      csvParsed = parsed;
+      showCSVPreview(parsed);
+    } catch(err) {
+      toast('Error al leer el CSV', 'error');
+      console.error(err);
+    }
+  };
+  reader.readAsText(file, 'windows-1252');
+}
+
+function parseStockVarianceCSV(text) {
+  const records = text.split('\r\n');
+  const items = [];
+  const seen  = new Set();
+  const remap = { 'SUB-TAQUILLA':'SUB-PUNTO VENTA','SUB-DULCERIA':'SUB-PUNTO VENTA','SUB-CT':'SUB-PUNTO VENTA' };
+
+  records.forEach(rec => {
+    if (!rec.trim()) return;
+    const row = parseCSVRow(rec);
+    if (row.length >= 36) {
+      const almacen   = (remap[row[19]] || row[19] || '').trim();
+      const categoria = (row[20] || '').trim();
+      const codigo    = (row[21] || '').trim();
+      const uom       = (row[22] || '').trim();
+      const invFinal  = (row[30] || '').replace(/,/g,'').trim();
+      const nombre    = (row[35] || '').trim();
+      const validAlm  = ['ALMACEN GENERAL','SUB-PUNTO VENTA','SUB-SPYRAL-LOBBY'];
+      if (codigo && nombre && validAlm.includes(almacen)) {
+        const key = `${almacen}|${codigo}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          items.push({ almacen, categoria, codigo, nombre, uom, teorico: parseFloat(invFinal) || 0 });
+        }
+      }
+    }
+  });
+  return items;
+}
+
+function parseCSVRow(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQ = !inQ; continue; }
+    if (ch === ',' && !inQ) { result.push(cur.replace(/[\r\n]/g,' ').trim()); cur = ''; continue; }
+    cur += ch;
+  }
+  result.push(cur.replace(/[\r\n]/g,' ').trim());
+  return result;
+}
+
+function showCSVPreview(items) {
+  const preview = document.getElementById('csv-preview');
+  const table   = document.getElementById('preview-table');
+  preview.style.display = '';
+
+  const counts = {};
+  items.forEach(it => { counts[it.almacen] = (counts[it.almacen]||0) + 1; });
+
+  let html = `
+    <div class="preview-row header">
+      <div class="preview-code">Código</div>
+      <div class="preview-name">Nombre</div>
+      <div class="preview-alm">Almacén</div>
+      <div class="preview-teorico">Teórico</div>
+    </div>
+  `;
+  items.slice(0, 20).forEach(it => {
+    html += `
+      <div class="preview-row">
+        <div class="preview-code">${it.codigo}</div>
+        <div class="preview-name">${it.nombre}</div>
+        <div class="preview-alm">${it.almacen.replace('ALMACEN GENERAL','ALM.GEN.').replace('SUB-PUNTO VENTA','SPV').replace('SUB-SPYRAL-LOBBY','SPYRAL')}</div>
+        <div class="preview-teorico">${fmt(it.teorico)}</div>
+      </div>
+    `;
+  });
+  if (items.length > 20) {
+    html += `<div class="preview-row" style="color:var(--muted);font-size:11px;justify-content:center">… y ${items.length-20} artículos más</div>`;
+  }
+  table.innerHTML = html;
+
+  document.getElementById('upload-zone').querySelector('.upload-title').textContent =
+    `✓ ${items.length} artículos detectados`;
+  document.getElementById('upload-zone').querySelector('.upload-sub').innerHTML =
+    Object.entries(counts).map(([k,v]) => `${k}: ${v}`).join(' · ');
+}
+
+function aplicarCSV() {
+  if (!csvParsed) return;
+  catalogo = csvParsed;
+  // Reset conteos cuando se carga nuevo teórico
+  if (confirm('¿Deseas mantener los conteos actuales? (Si el CSV es de un período diferente, es recomendable borrarlos)')) {
+    // keep conteos
+  } else {
+    conteos = {};
+  }
+  saveStorage();
+  toast(`✓ ${catalogo.length} artículos cargados`, 'ok');
+  csvParsed = null;
+  document.getElementById('csv-preview').style.display = 'none';
+  renderAdmin();
+}
+
+function cancelarCSV() {
+  csvParsed = null;
+  document.getElementById('csv-preview').style.display = 'none';
+  document.getElementById('upload-zone').querySelector('.upload-title').textContent = 'Seleccionar archivo CSV';
+  document.getElementById('upload-zone').querySelector('.upload-sub').innerHTML = 'Soporta el formato<br><strong>Historical-StockVariance</strong> de Vista';
+}
+
+// ══════════════════════════════════════════════════
+//  EXPORTAR CSV RESUMEN
+// ══════════════════════════════════════════════════
+function exportarResumen() {
+  const rows = ['Almacen,Categoria,Codigo,Nombre,UOM,Teorico,Fisico,Diferencia,Fecha conteo'];
+  catalogo.forEach(it => {
+    const key = `${it.almacen}|${it.codigo}`;
+    const c   = conteos[key];
+    const fisico = c !== undefined ? c.fisico : '';
+    const dif    = fisico !== '' ? fisico - it.teorico : '';
+    const ts     = c ? new Date(c.ts).toLocaleString('es-MX') : '';
+    rows.push([it.almacen, it.categoria, it.codigo, `"${it.nombre}"`, it.uom, it.teorico, fisico, dif, ts].join(','));
+  });
+  const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `inventario_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('CSV exportado', 'ok');
+}
+
+// ══════════════════════════════════════════════════
+//  DANGER ZONE
+// ══════════════════════════════════════════════════
+function limpiarConteos() {
+  if (!confirm('¿Borrar TODOS los conteos físicos? El inventario teórico se mantiene.')) return;
+  conteos = {}; historial = [];
+  saveStorage(); toast('Conteos borrados', 'ok'); renderAdmin();
+}
+
+function limpiarTodo() {
+  if (!confirm('¿Resetear TODO? Se perderán conteos y el teórico volverá al CSV precargado.')) return;
+  conteos = {}; historial = [];
+  catalogo = CATALOGO_INICIAL.map(it => ({
+    ...it, almacen: ALMACEN_MAP[it.almacen] || it.almacen
+  }));
+  const seen = new Set();
+  catalogo = catalogo.filter(it => {
+    const k = `${it.almacen}|${it.codigo}`;
+    if (seen.has(k)) return false; seen.add(k); return true;
+  });
+  saveStorage(); toast('App reseteada', 'ok'); renderAdmin();
+}
+
+// ══════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════
+function fmt(n) {
+  if (n === null || n === undefined || n === '') return '—';
+  const num = Number(n);
+  if (isNaN(num)) return n;
+  // Show decimals only if needed
+  return num % 1 === 0 ? num.toLocaleString('es-MX') : num.toLocaleString('es-MX', {maximumFractionDigits:2});
+}
+
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ══════════════════════════════════════════════════
+//  START
+// ══════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
