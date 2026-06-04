@@ -508,17 +508,23 @@ async function sincronizar(silent=false){
     const resp=await fetch(url);
     const data=await resp.json();
     if(data.ok && data.data && data.data.length){
-      // Merge remote conteos (remote wins for same key)
+      // Agrupar por key y quedarse con el registro más reciente por número de fila
+      // (el Sheet los guarda en orden cronológico, el último es el más reciente)
+      const remoteMap={};
       data.data.forEach(row=>{
         const key=`${row.almacen}|${row.codigo}`;
-        if(!conteos[key] || new Date(row.ts)>new Date(conteos[key].ts)){
-          conteos[key]={fisico:Number(row.fisico),ts:row.ts,usuario:row.usuario};
-        }
+        // Siempre sobreescribir — el Sheet tiene el último estado guardado
+        remoteMap[key]={fisico:Number(row.fisico),ts:row.ts,usuario:row.usuario};
+      });
+      // Merge: remote gana siempre (es la fuente de verdad compartida)
+      Object.entries(remoteMap).forEach(([key,val])=>{
+        conteos[key]=val;
       });
       saveStorage();
       const ts=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
-      document.getElementById('sync-status').textContent=`Última sync: ${ts} · ${data.data.length} registros`;
-      if(!silent) toast(`✓ ${data.data.length} conteos sincronizados`,'ok');
+      const total=Object.keys(remoteMap).length;
+      document.getElementById('sync-status').textContent=`Última sync: ${ts} · ${total} artículos`;
+      if(!silent) toast(`✓ ${total} artículos sincronizados`,'ok');
     } else {
       if(!silent) toast('Sin datos nuevos','ok');
       document.getElementById('sync-status').textContent='Sin conteos remotos aún';
@@ -918,6 +924,8 @@ function showLoading(txt='Cargando...'){document.getElementById('loading-text').
 function hideLoading(){document.getElementById('loading').classList.remove('show');}
 
 init();
+// Auto-sync cada 30 segundos
+setInterval(()=>{ if(currentUser) sincronizar(true); }, 30000);
 </script>
 </body>
 </html>
