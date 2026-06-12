@@ -32,7 +32,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 .login-sync{font-size:11px;color:var(--muted);text-align:center;margin-top:16px}
 
 /* TOPBAR */
-.topbar{padding:calc(var(--safe-top) + 14px) 16px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0}
+.topbar{padding:calc(var(--safe-top) + 14px) 16px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;position:relative;z-index:150}
 .topbar .back{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text);font-size:18px;flex-shrink:0}
 .topbar h2{font-size:17px;font-weight:700;flex:1;line-height:1.2}
 .topbar .badge{background:var(--gold);color:#000;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;font-family:'Space Mono',monospace}
@@ -113,6 +113,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 .float-bar.visible{display:flex}
 .float-bar-text{font-size:14px;font-weight:700;color:#000}
 .float-bar-sub{font-size:11px;color:rgba(0,0,0,.6)}
+.check-ok{height:44px;padding:0 14px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0;transition:background .15s,color .15s,border-color .15s}
+.check-ok.active{background:rgba(48,208,128,.15);border-color:var(--green);color:var(--green)}
 
 /* SCANNER */
 #screen-scanner{background:#000;position:relative}
@@ -697,6 +699,7 @@ function renderItems(focusCode){
         <button class="cnt-btn" onclick="adjustCount('${it.codigo}',${it.teorico},-1)">−</button>
         <input class="cnt-input" id="inp-${it.codigo}" type="number" inputmode="decimal" value="${fisico!==''?fisico:''}" placeholder="0" oninput="setCount('${it.codigo}',${it.teorico},this.value)">
         <button class="cnt-btn add" onclick="adjustCount('${it.codigo}',${it.teorico},1)">+</button>
+        <button class="check-ok${fisico!==''&&Number(fisico)===it.teorico?' active':''}" id="chk-${it.codigo}" onclick="toggleCheckOk('${it.codigo}',${it.teorico})">✓</button>
       </div>`;
     list.appendChild(card);
   });
@@ -710,6 +713,17 @@ function adjustCount(codigo,teorico,delta){
   inp.value=Math.max(0,Number(cur)+delta);setCount(codigo,teorico,inp.value);
 }
 
+function toggleCheckOk(codigo,teorico){
+  const key=`${currentAlmacen}|${codigo}`;
+  const cur=pendingCounts[key]!==undefined?pendingCounts[key]:(conteos[key]?conteos[key].fisico:null);
+  const inp=document.getElementById(`inp-${codigo}`);
+  if(cur!==null&&Number(cur)===teorico){
+    inp.value='';setCount(codigo,teorico,'');
+  } else {
+    inp.value=teorico;setCount(codigo,teorico,teorico);
+  }
+}
+
 function setCount(codigo,teorico,val){
   const key=`${currentAlmacen}|${codigo}`,num=val===''||val===null?'':Number(val);
   if(num==='')delete pendingCounts[key];else pendingCounts[key]=num;
@@ -718,6 +732,8 @@ function setCount(codigo,teorico,val){
   if(d)d.textContent=fisico!==null?fmt(fisico):'—';
   if(df){df.textContent=dif!==null?(dif>0?'+':'')+fmt(dif):'—';df.className='num-val dif '+(dif===null?'neu':dif>0?'pos':dif<0?'neg':'neu');}
   if(card){card.className='item-card'+(fisico!==null?(dif!==0?' diferencia':' contado'):'');if(fisico!==null&&dif===0)card.className='item-card contado';}
+  const chk=document.getElementById(`chk-${codigo}`);
+  if(chk)chk.classList.toggle('active',fisico!==null&&dif===0);
   updateItemsBadge();updateFloatBar();
 }
 
