@@ -1,4 +1,4 @@
-const CACHE = 'inv-pdc-v1';
+const CACHE = 'inv-pdc-v2';
 const ASSETS = ['./index.html', './catalogo.js', './manifest.json'];
 
 self.addEventListener('install', e => {
