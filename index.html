@@ -32,7 +32,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 .login-sync{font-size:11px;color:var(--muted);text-align:center;margin-top:16px}
 
 /* TOPBAR */
-.topbar{padding:calc(var(--safe-top) + 14px) 16px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;position:relative;z-index:150}
+.topbar{padding:calc(var(--safe-top) + 14px) 16px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0}
 .topbar .back{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text);font-size:18px;flex-shrink:0}
 .topbar h2{font-size:17px;font-weight:700;flex:1;line-height:1.2}
 .topbar .badge{background:var(--gold);color:#000;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;font-family:'Space Mono',monospace}
@@ -113,8 +113,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 .float-bar.visible{display:flex}
 .float-bar-text{font-size:14px;font-weight:700;color:#000}
 .float-bar-sub{font-size:11px;color:rgba(0,0,0,.6)}
-.check-ok{height:44px;padding:0 14px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0;transition:background .15s,color .15s,border-color .15s}
-.check-ok.active{background:rgba(48,208,128,.15);border-color:var(--green);color:var(--green)}
 
 /* SCANNER */
 #screen-scanner{background:#000;position:relative}
@@ -689,18 +687,23 @@ function renderItems(focusCode){
     card.className='item-card'+(fisico!==''?(dif!==0?' diferencia':' contado'):'');
     if(fisico!==''&&dif===0)card.className='item-card contado';
     const dc=dif===null?'neu':dif>0?'pos':dif<0?'neg':'neu';
+    const jarabe=getJarabe(it.nombre);
+    const nachos=getNachosRole(it.nombre, it.codigo);
+    const pres=(!jarabe && !nachos) ? getPresentacion(it.codigo) : null;
     card.innerHTML=`<div class="item-header"><div class="item-code">${it.codigo}</div><div class="item-name">${it.nombre}</div></div>
       <div class="item-nums">
         <div class="num-block"><div class="num-label">Teórico</div><div class="num-val teorico">${fmt(it.teorico)}</div><div class="num-uom">${it.uom}</div></div>
         <div class="num-block"><div class="num-label">Físico</div><div class="num-val fisico" id="disp-${it.codigo}">${fisico!==''?fmt(fisico):'—'}</div><div class="num-uom">${it.uom}</div></div>
         <div class="num-block"><div class="num-label">Diferencia</div><div class="num-val dif ${dc}" id="dif-${it.codigo}">${dif!==null?(dif>0?'+':'')+fmt(dif):'—'}</div><div class="num-uom">${it.uom}</div></div>
       </div>
-      <div class="counter-row">
-        <button class="cnt-btn" onclick="adjustCount('${it.codigo}',${it.teorico},-1)">−</button>
-        <input class="cnt-input" id="inp-${it.codigo}" type="number" inputmode="decimal" value="${fisico!==''?fisico:''}" placeholder="0" oninput="setCount('${it.codigo}',${it.teorico},this.value)">
-        <button class="cnt-btn add" onclick="adjustCount('${it.codigo}',${it.teorico},1)">+</button>
-        <button class="check-ok${fisico!==''&&Number(fisico)===it.teorico?' active':''}" id="chk-${it.codigo}" onclick="toggleCheckOk('${it.codigo}',${it.teorico})">✓</button>
-      </div>`;
+      ${jarabe ? jarabeHTML(it.codigo, it.teorico, jarabe) :
+        nachos ? nachosHTML(it.codigo, it.teorico, nachos) :
+        pres   ? presentacionHTML(it.codigo, it.teorico, pres) :
+        `<div class="counter-row">
+          <button class="cnt-btn" onclick="adjustCount('${it.codigo}',${it.teorico},-1)">−</button>
+          <input class="cnt-input" id="inp-${it.codigo}" type="number" inputmode="decimal" value="${fisico!==''?fisico:''}" placeholder="0" oninput="setCount('${it.codigo}',${it.teorico},this.value)">
+          <button class="cnt-btn add" onclick="adjustCount('${it.codigo}',${it.teorico},1)">+</button>
+        </div>`}`;
     list.appendChild(card);
   });
   updateItemsBadge();updateFloatBar();
@@ -713,17 +716,6 @@ function adjustCount(codigo,teorico,delta){
   inp.value=Math.max(0,Number(cur)+delta);setCount(codigo,teorico,inp.value);
 }
 
-function toggleCheckOk(codigo,teorico){
-  const key=`${currentAlmacen}|${codigo}`;
-  const cur=pendingCounts[key]!==undefined?pendingCounts[key]:(conteos[key]?conteos[key].fisico:null);
-  const inp=document.getElementById(`inp-${codigo}`);
-  if(cur!==null&&Number(cur)===teorico){
-    inp.value='';setCount(codigo,teorico,'');
-  } else {
-    inp.value=teorico;setCount(codigo,teorico,teorico);
-  }
-}
-
 function setCount(codigo,teorico,val){
   const key=`${currentAlmacen}|${codigo}`,num=val===''||val===null?'':Number(val);
   if(num==='')delete pendingCounts[key];else pendingCounts[key]=num;
@@ -732,8 +724,6 @@ function setCount(codigo,teorico,val){
   if(d)d.textContent=fisico!==null?fmt(fisico):'—';
   if(df){df.textContent=dif!==null?(dif>0?'+':'')+fmt(dif):'—';df.className='num-val dif '+(dif===null?'neu':dif>0?'pos':dif<0?'neg':'neu');}
   if(card){card.className='item-card'+(fisico!==null?(dif!==0?' diferencia':' contado'):'');if(fisico!==null&&dif===0)card.className='item-card contado';}
-  const chk=document.getElementById(`chk-${codigo}`);
-  if(chk)chk.classList.toggle('active',fisico!==null&&dif===0);
   updateItemsBadge();updateFloatBar();
 }
 
@@ -938,6 +928,386 @@ function fmt(n){if(n===null||n===undefined||n==='')return'—';const num=Number(
 function toast(msg,type=''){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show '+type;setTimeout(()=>el.classList.remove('show'),2200);}
 function showLoading(txt='Cargando...'){document.getElementById('loading-text').textContent=txt;document.getElementById('loading').classList.add('show');}
 function hideLoading(){document.getElementById('loading').classList.remove('show');}
+
+// ══════════════ JARABES ══════════════
+const JARABES = [
+  { keys:['COCA COLA CLASICA','COCA COLA CLÁSICA'], litrosBIB:19, empaque:0.85, ratio:0.7913 },
+  { keys:['COCA COLA LIGHT'],  litrosBIB:9,  empaque:0.52, ratio:1.0028 },
+  { keys:['COCA COLA ZERO'],   litrosBIB:9,  empaque:0.52, ratio:1.0078 },
+  { keys:['FANTA ZERO','FANTA NARANJA ZERO'], litrosBIB:9, empaque:0.52, ratio:0.8419 },
+  { keys:['FANTA'],            litrosBIB:9,  empaque:0.52, ratio:0.8419 },
+  { keys:['FUZE TEA'],         litrosBIB:9,  empaque:0.52, ratio:0.8580 },
+  { keys:['SIDRAL MUNDET'],    litrosBIB:9,  empaque:0.52, ratio:0.8003 },
+  { keys:['SPRITE'],           litrosBIB:9,  empaque:0.53, ratio:0.8219 },
+  { keys:['DEL VALLE'],        litrosBIB:9,  empaque:0.54, ratio:0.8580 },
+  { keys:['ICEE CEREZA'],      litrosBIB:19, empaque:0.83, ratio:0.8030 },
+  { keys:['ICEE MARACUY'],     litrosBIB:19, empaque:0.83, ratio:0.8003 },
+];
+
+function norm(s){ return s.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+
+function getJarabe(nombre){
+  const n = norm(nombre);
+  // Sort by key length desc so more specific matches win
+  const sorted = [...JARABES].sort((a,b)=>Math.max(...b.keys.map(k=>k.length))-Math.max(...a.keys.map(k=>k.length)));
+  for(const j of sorted){ for(const k of j.keys){ if(n.includes(norm(k))) return j; } }
+  return null;
+}
+
+function calcLitros(j, bibs, kg){
+  const lBibs = Number(bibs||0) * j.litrosBIB;
+  const kgN   = Number(kg||0);
+  const lInc  = kgN > j.empaque ? (kgN - j.empaque) * j.ratio : 0;
+  return Math.round((lBibs + lInc)*1000)/1000;
+}
+
+function jarabeHTML(codigo, teorico, j){
+  return `<div style="background:rgba(232,160,32,.07);border:1px solid var(--gold-dim);border-radius:10px;padding:12px">
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:var(--gold);margin-bottom:10px">🧪 CALCULADORA · BIB ${j.litrosBIB}L · Empaque ${j.empaque}kg</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div>
+        <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px">BIBs completos</div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <button class="cnt-btn" style="width:34px;height:34px;font-size:18px;flex-shrink:0" onclick="jAdj('${codigo}',${teorico},-1)">−</button>
+          <input id="jb-${codigo}" type="number" inputmode="numeric" min="0" value="0"
+            style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 4px;color:var(--text);font-family:'Space Mono',monospace;font-size:18px;font-weight:700;text-align:center;outline:none;min-width:0"
+            oninput="jCalc('${codigo}',${teorico})">
+          <button class="cnt-btn add" style="width:34px;height:34px;font-size:18px;flex-shrink:0" onclick="jAdj('${codigo}',${teorico},1)">+</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px">Kg BIB incompleto</div>
+        <input id="jk-${codigo}" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"
+          style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 4px;color:var(--text);font-family:'Space Mono',monospace;font-size:18px;font-weight:700;text-align:center;outline:none;height:34px"
+          oninput="jCalc('${codigo}',${teorico})">
+      </div>
+    </div>
+    <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center">
+      <div style="font-size:9px;color:var(--muted);font-weight:700;letter-spacing:1px">LITROS CALCULADOS</div>
+      <div id="jr-${codigo}" style="font-size:22px;font-weight:800;font-family:'Space Mono',monospace;color:var(--muted)">0.000 L</div>
+    </div>
+  </div>`;
+}
+
+function jAdj(codigo, teorico, delta){
+  const el=document.getElementById('jb-'+codigo);
+  if(el){ el.value=Math.max(0,Number(el.value)+delta); jCalc(codigo,teorico); }
+}
+
+function jCalc(codigo, teorico){
+  const nombre=catalogo.find(x=>x.codigo===codigo)?.nombre||'';
+  const j=getJarabe(nombre); if(!j) return;
+  const bibs=document.getElementById('jb-'+codigo)?.value||0;
+  const kg=document.getElementById('jk-'+codigo)?.value||0;
+  const litros=calcLitros(j,bibs,kg);
+  const el=document.getElementById('jr-'+codigo);
+  if(el){ el.textContent=litros.toFixed(3)+' L'; el.style.color=litros>0?'var(--gold)':'var(--muted)'; }
+  setCount(codigo, teorico, litros>0?litros:'');
+}
+
+
+// ══════════════ NACHOS ══════════════
+// Recetas: Grande y Chica
+// Columnas: [nachosG_grs, doritos_grs, takis_grs] por charola
+const NACHOS_RECETAS = {
+  grande: {
+    'nachos_g':     { nachosG:220, doritos:0,   takis:0  },
+    'doritos':      { nachosG:0,   doritos:180, takis:0  },
+    'mix_doritos':  { nachosG:160, doritos:50,  takis:0  },
+    'mix_takis':    { nachosG:160, doritos:0,   takis:80 },
+  },
+  chica: {
+    'nachos_g':     { nachosG:120, doritos:0,   takis:0  },
+    'doritos':      { nachosG:0,   doritos:120, takis:0  },
+    'mix_doritos':  { nachosG:60,  doritos:40,  takis:0  },
+    'mix_takis':    { nachosG:60,  doritos:0,   takis:60 },
+  }
+};
+
+// Map product roles
+// role: 'charola_grande' | 'charola_chica' | 'nachos_g' | 'doritos' | 'takis'
+const NACHOS_CODIGOS = {
+  '2104': 'charola_grande',   // Charola p/Nachos Grande G.
+  '412':  'charola_chica',    // Charola P/Nachos G.
+  '428':  'nachos_g',         // Nachos G.
+  '416':  'doritos',          // Doritos Nachos G.
+  '11015':'takis',            // Takis Fuego
+};
+const NACHOS_NOMBRES = [
+  { key:'CHAROLA P/NACHOS GRANDE', role:'charola_grande' },
+  { key:'CHAROLA GRANDE',          role:'charola_grande' },
+  { key:'CHAROLA P/NACHOS G',      role:'charola_chica'  },
+  { key:'CHAROLA CHICA',           role:'charola_chica'  },
+  { key:'NACHOS G',                role:'nachos_g'       },
+  { key:'DORITOS NACHOS',          role:'doritos'        },
+  { key:'TAKIS FUEGO',             role:'takis'          },
+  { key:'TAKIS',                   role:'takis'          },
+];
+
+function getNachosRole(nombre, codigo){
+  // Exclusiones explícitas — productos que contienen "nachos" pero NO son de la calculadora
+  const EXCLUIR = ['289']; // Queso P/Nachos G. y similares
+  if(EXCLUIR.includes(String(codigo))) return null;
+  const n = norm(nombre);
+  // Excluir si contiene QUESO
+  if(n.includes('QUESO')) return null;
+  // Check by codigo first (most reliable)
+  if(NACHOS_CODIGOS[String(codigo)]) return NACHOS_CODIGOS[String(codigo)];
+  for(const {key,role} of NACHOS_NOMBRES){
+    if(n.includes(norm(key))) return role;
+  }
+  return null;
+}
+
+// Calculate total grams consumed by prepared charolas
+function calcNachosGramos(role){
+  const sizes = ['grande','chica'];
+  const tipos = ['nachos_g','doritos','mix_doritos','mix_takis'];
+  let totalNachosG=0, totalDoritos=0, totalTakis=0, totalCharolaGrande=0, totalCharolaChica=0;
+  sizes.forEach(sz => {
+    tipos.forEach(tipo => {
+      const val = Number(document.getElementById(`nc-${sz}-${tipo}`)?.value||0);
+      if(val > 0){
+        const rec = NACHOS_RECETAS[sz][tipo];
+        totalNachosG   += val * rec.nachosG;
+        totalDoritos   += val * rec.doritos;
+        totalTakis     += val * rec.takis;
+        if(sz==='grande') totalCharolaGrande += val;
+        else              totalCharolaChica  += val;
+      }
+    });
+  });
+  return { totalNachosG, totalDoritos, totalTakis, totalCharolaGrande, totalCharolaChica };
+}
+
+function nachosHTML(codigo, teorico, role){
+  const isCharola = role==='charola_grande'||role==='charola_chica';
+  const isInsumo  = !isCharola;
+  const sizeLabel = role==='charola_grande'?'Grande':'Chica';
+  
+  if(isCharola){
+    // Show: sueltas + prepared of each type (both sizes contribute to charola count)
+    return `<div style="background:rgba(232,160,32,.07);border:1px solid var(--gold-dim);border-radius:10px;padding:12px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:var(--gold);margin-bottom:10px">🫙 CALCULADORA CHAROLAS</div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Charolas ${sizeLabel} sueltas</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+        <button class="cnt-btn" style="width:36px;height:36px;font-size:18px;flex-shrink:0" onclick="nAdj('${codigo}',${teorico},'sueltas',-1)">−</button>
+        <input id="nc-sueltas-${codigo}" type="number" inputmode="numeric" min="0" value="0"
+          style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-family:'Space Mono',monospace;font-size:18px;font-weight:700;text-align:center;outline:none"
+          oninput="nCalcCharola('${codigo}',${teorico},'${role}')">
+        <button class="cnt-btn add" style="width:36px;height:36px;font-size:18px;flex-shrink:0" onclick="nAdj('${codigo}',${teorico},'sueltas',1)">+</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">+ Charolas preparadas ${sizeLabel}</div>
+      ${['nachos_g','doritos','mix_doritos','mix_takis'].map(tipo=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:12px;color:var(--text);flex:1">${{nachos_g:'Nachos G',doritos:'Doritos',mix_doritos:'Mix Doritos',mix_takis:'Mix Takis'}[tipo]}</div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <button class="cnt-btn" style="width:30px;height:30px;font-size:16px;flex-shrink:0" onclick="nAdj('${codigo}',${teorico},'${role==='charola_grande'?'grande':'chica'}-${tipo}',-1,'${role}')">−</button>
+            <input id="nc-${role==='charola_grande'?'grande':'chica'}-${tipo}" type="number" inputmode="numeric" min="0" value="0"
+              style="width:60px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px;color:var(--text);font-family:'Space Mono',monospace;font-size:16px;font-weight:700;text-align:center;outline:none"
+              oninput="nCalcCharola('${codigo}',${teorico},'${role}')">
+            <button class="cnt-btn add" style="width:30px;height:30px;font-size:16px;flex-shrink:0" onclick="nAdj('${codigo}',${teorico},'${role==='charola_grande'?'grande':'chica'}-${tipo}',1,'${role}')">+</button>
+          </div>
+        </div>`).join('')}
+      <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;margin-top:8px">
+        <div style="font-size:9px;color:var(--muted);font-weight:700;letter-spacing:1px">TOTAL CHAROLAS</div>
+        <div id="nr-${codigo}" style="font-size:22px;font-weight:800;font-family:'Space Mono',monospace;color:var(--gold)">0 PZA</div>
+      </div>
+    </div>`;
+  } else {
+    // Insumo: show suelto input + breakdown of grams in charolas
+    const insumoKey = role; // 'nachos_g' | 'doritos' | 'takis'
+    return `<div style="background:rgba(232,160,32,.07);border:1px solid var(--gold-dim);border-radius:10px;padding:12px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:var(--gold);margin-bottom:10px">🫙 CALCULADORA NACHOS</div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Gramos sueltos (sin preparar)</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+        <button class="cnt-btn" style="width:36px;height:36px;font-size:18px;flex-shrink:0" onclick="nAdj('${codigo}',${teorico},'sueltos',-1)">−</button>
+        <input id="ni-sueltos-${codigo}" type="number" inputmode="decimal" min="0" value=""
+          style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-family:'Space Mono',monospace;font-size:18px;font-weight:700;text-align:center;outline:none"
+          placeholder="0 GRS"
+          oninput="nCalcInsumo('${codigo}',${teorico},'${insumoKey}')">
+        <button class="cnt-btn add" style="width:36px;height:36px;font-size:18px;flex-shrink:0" onclick="nAdj('${codigo}',${teorico},'sueltos',1)">+</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">+ Charolas preparadas (ambos tamaños)</div>
+      ${['grande','chica'].map(sz=>['nachos_g','doritos','mix_doritos','mix_takis'].map(tipo=>{
+        const rec = NACHOS_RECETAS[sz][tipo];
+        const grs = insumoKey==='nachos_g'?rec.nachosG:insumoKey==='doritos'?rec.doritos:rec.takis;
+        if(grs===0) return '';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="flex:1">
+            <div style="font-size:12px;color:var(--text)">${sz==='grande'?'G':'Ch'}: ${{nachos_g:'Nachos G',doritos:'Doritos',mix_doritos:'Mix Doritos',mix_takis:'Mix Takis'}[tipo]}</div>
+            <div style="font-size:10px;color:var(--muted)">${grs}g c/u</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <button class="cnt-btn" style="width:30px;height:30px;font-size:16px;flex-shrink:0" onclick="nAdjInsumo('${codigo}',${teorico},'${sz}-${tipo}','${insumoKey}',-1)">−</button>
+            <input id="nc-${sz}-${tipo}" type="number" inputmode="numeric" min="0" value="0"
+              style="width:60px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px;color:var(--text);font-family:'Space Mono',monospace;font-size:16px;font-weight:700;text-align:center;outline:none"
+              oninput="nCalcInsumo('${codigo}',${teorico},'${insumoKey}')">
+            <button class="cnt-btn add" style="width:30px;height:30px;font-size:16px;flex-shrink:0" onclick="nAdjInsumo('${codigo}',${teorico},'${sz}-${tipo}','${insumoKey}',1)">+</button>
+          </div>
+        </div>`;
+      }).join('')).join('')}
+      <div style="background:var(--bg);border-radius:8px;padding:8px;margin-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:9px;color:var(--muted);font-weight:700;letter-spacing:1px">SUELTOS</div>
+            <div id="nr-sueltos-${codigo}" style="font-size:16px;font-weight:800;font-family:'Space Mono',monospace;color:var(--muted)">0 g</div>
+          </div>
+          <div style="font-size:18px;color:var(--muted)">+</div>
+          <div>
+            <div style="font-size:9px;color:var(--muted);font-weight:700;letter-spacing:1px">EN CHAROLAS</div>
+            <div id="nr-charolas-${codigo}" style="font-size:16px;font-weight:800;font-family:'Space Mono',monospace;color:var(--muted)">0 g</div>
+          </div>
+          <div style="font-size:18px;color:var(--muted)">=</div>
+          <div>
+            <div style="font-size:9px;color:var(--gold);font-weight:700;letter-spacing:1px">TOTAL GRS</div>
+            <div id="nr-${codigo}" style="font-size:18px;font-weight:800;font-family:'Space Mono',monospace;color:var(--gold)">0 g</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+}
+
+function nAdj(codigo, teorico, field, delta, role){
+  const el = document.getElementById(field.includes('-') ? `nc-${field}` : `nc-sueltas-${codigo}`);
+  if(el){ el.value=Math.max(0,Number(el.value)+delta); }
+  if(role) nCalcCharola(codigo,teorico,role);
+  else nCalcCharola(codigo,teorico, getNachosRole(catalogo.find(x=>x.codigo===codigo)?.nombre||'',codigo));
+}
+
+function nAdjInsumo(codigo, teorico, field, insumoKey, delta){
+  const el = document.getElementById(`nc-${field}`);
+  if(el){ el.value=Math.max(0,Number(el.value)+delta); nCalcInsumo(codigo,teorico,insumoKey); }
+}
+
+function nCalcCharola(codigo, teorico, role){
+  const sz = role==='charola_grande'?'grande':'chica';
+  const sueltas = Number(document.getElementById(`nc-sueltas-${codigo}`)?.value||0);
+  let preparadas = 0;
+  ['nachos_g','doritos','mix_doritos','mix_takis'].forEach(tipo=>{
+    preparadas += Number(document.getElementById(`nc-${sz}-${tipo}`)?.value||0);
+  });
+  const total = sueltas + preparadas;
+  const el=document.getElementById(`nr-${codigo}`);
+  if(el){ el.textContent=total+' PZA'; el.style.color=total>0?'var(--gold)':'var(--muted)'; }
+  setCount(codigo, teorico, total>0?total:'');
+}
+
+function nCalcInsumo(codigo, teorico, insumoKey){
+  const sueltos = Number(document.getElementById(`ni-sueltos-${codigo}`)?.value||0);
+  let enCharolas = 0;
+  ['grande','chica'].forEach(sz=>{
+    ['nachos_g','doritos','mix_doritos','mix_takis'].forEach(tipo=>{
+      const val = Number(document.getElementById(`nc-${sz}-${tipo}`)?.value||0);
+      const rec = NACHOS_RECETAS[sz][tipo];
+      const grs = insumoKey==='nachos_g'?rec.nachosG:insumoKey==='doritos'?rec.doritos:rec.takis;
+      enCharolas += val * grs;
+    });
+  });
+  const total = sueltos + enCharolas;
+  const elS=document.getElementById(`nr-sueltos-${codigo}`);
+  const elC=document.getElementById(`nr-charolas-${codigo}`);
+  const elT=document.getElementById(`nr-${codigo}`);
+  if(elS){ elS.textContent=sueltos+' g'; elS.style.color=sueltos>0?'var(--text)':'var(--muted)'; }
+  if(elC){ elC.textContent=enCharolas+' g'; elC.style.color=enCharolas>0?'var(--text)':'var(--muted)'; }
+  if(elT){ elT.textContent=total+' g'; elT.style.color=total>0?'var(--gold)':'var(--muted)'; }
+  setCount(codigo, teorico, total>0?total:'');
+}
+
+
+// ══════════════ PRESENTACIONES ══════════════
+const PRESENTACIONES = {"563":{"uom1":"GRS","uom2":"CAJA","conv2":12000.0,"uom3":"BOLSA","conv3":2000.0},"617":{"uom1":"PZA","uom2":"CAJA","conv2":50.0,"uom3":"","conv3":0.0},"1200":{"uom1":"PZA","uom2":"CAJA","conv2":50.0,"uom3":"","conv3":0.0},"1231":{"uom1":"PZA","uom2":"PAQUET","conv2":300.0,"uom3":"","conv3":0.0},"2942":{"uom1":"GRS","uom2":"CAJA","conv2":10000.0,"uom3":"BOTELL","conv3":1000.0},"7689":{"uom1":"GRS","uom2":"CAJA","conv2":5280.0,"uom3":"LATA","conv3":440.0},"9811":{"uom1":"GRS","uom2":"CAJA","conv2":6000.0,"uom3":"BOLSA","conv3":3000.0},"566":{"uom1":"GRS","uom2":"BOLSA","conv2":2266.0,"uom3":"BOLSA2","conv3":1814.0},"620":{"uom1":"PZA","uom2":"CAJA","conv2":1200.0,"uom3":"MANGA","conv3":200.0},"3143":{"uom1":"PZA","uom2":"CAJA","conv2":600.0,"uom3":"MANGA","conv3":50.0},"3225":{"uom1":"PZA","uom2":"CAJA","conv2":384.0,"uom3":"BOLSA","conv3":24.0},"3226":{"uom1":"PZA","uom2":"CAJA","conv2":250.0,"uom3":"","conv3":0.0},"14009":{"uom1":"PZA","uom2":"CAJA","conv2":250.0,"uom3":"","conv3":0.0},"24033":{"uom1":"PZA","uom2":"CAJA","conv2":384.0,"uom3":"BOLSA","conv3":24.0},"24618":{"uom1":"PZA","uom2":"CAJA","conv2":40.0,"uom3":"","conv3":0.0},"27075":{"uom1":"PZA","uom2":"CAJA","conv2":252.0,"uom3":"","conv3":0.0},"1773":{"uom1":"GRS","uom2":"CAJA","conv2":9600.0,"uom3":"BOLSA","conv3":2400.0},"2465":{"uom1":"GRS","uom2":"BOLSA","conv2":3700.0,"uom3":"","conv3":0.0},"7708":{"uom1":"GRS","uom2":"BOLSA","conv2":700.0,"uom3":"","conv3":0.0},"7913":{"uom1":"PZA","uom2":"CAJA","conv2":500.0,"uom3":"","conv3":0.0},"9990":{"uom1":"MIL","uom2":"BOTELL","conv2":750.0,"uom3":"","conv3":0.0},"18262":{"uom1":"MIL","uom2":"BOTELL","conv2":750.0,"uom3":"","conv3":0.0},"18282":{"uom1":"MIL","uom2":"BOTELL","conv2":750.0,"uom3":"","conv3":0.0},"27567":{"uom1":"MIL","uom2":"PAQUET","conv2":9000.0,"uom3":"BOTELL","conv3":1500.0},"470":{"uom1":"LTS","uom2":"CAJA","conv2":12.0,"uom3":"","conv3":0.0},"472":{"uom1":"REB","uom2":"PAQUET","conv2":60.0,"uom3":"","conv3":0.0},"473":{"uom1":"REB","uom2":"PAQUET","conv2":7.0,"uom3":"","conv3":0.0},"475":{"uom1":"GRS","uom2":"CAJA","conv2":11400.0,"uom3":"BARRA","conv3":1900.0},"477":{"uom1":"REB","uom2":"PAQUET","conv2":55.0,"uom3":"","conv3":0.0},"1614":{"uom1":"LTS","uom2":"CAJA","conv2":12.0,"uom3":"","conv3":0.0},"2716":{"uom1":"GRS","uom2":"CAJA","conv2":5000.0,"uom3":"CAJA2","conv3":10200.0},"5300":{"uom1":"REB","uom2":"PAQUET","conv2":170.0,"uom3":"","conv3":0.0},"16407":{"uom1":"LTS","uom2":"CAJA","conv2":11.35,"uom3":"TETRA","conv3":0.95},"17675":{"uom1":"GRS","uom2":"BOLSA","conv2":1000.0,"uom3":"","conv3":0.0},"23991":{"uom1":"PZA","uom2":"CAJA","conv2":108.0,"uom3":"","conv3":0.0},"27328":{"uom1":"GRS","uom2":"CAJA","conv2":4000.0,"uom3":"PAQUET","conv3":1000.0},"478":{"uom1":"GRS","uom2":"CUBETA","conv2":25000.0,"uom3":"","conv3":0.0},"479":{"uom1":"GRS","uom2":"CUBETA","conv2":4500.0,"uom3":"","conv3":0.0},"480":{"uom1":"GRS","uom2":"CUBETA","conv2":4500.0,"uom3":"","conv3":0.0},"481":{"uom1":"GRS","uom2":"CAJA","conv2":2500.0,"uom3":"","conv3":0.0},"482":{"uom1":"GRS","uom2":"CUBETA","conv2":3000.0,"uom3":"","conv3":0.0},"503":{"uom1":"GRS","uom2":"CAJA","conv2":9000.0,"uom3":"CAJA2","conv3":12000.0},"3963":{"uom1":"GRS","uom2":"CAJA","conv2":4560.0,"uom3":"LATA","conv3":380.0},"4256":{"uom1":"GRS","uom2":"CAJA","conv2":4000.0,"uom3":"BOTE","conv3":1000.0},"22284":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"26937":{"uom1":"PZA","uom2":"CAJA","conv2":252.0,"uom3":"","conv3":0.0},"524":{"uom1":"PZA","uom2":"CAJA","conv2":1000.0,"uom3":"MANGA","conv3":100.0},"526":{"uom1":"PZA","uom2":"CAJA","conv2":1000.0,"uom3":"MANGA","conv3":100.0},"530":{"uom1":"PZA","uom2":"CAJA","conv2":1000.0,"uom3":"","conv3":0.0},"532":{"uom1":"PZA","uom2":"CAJA","conv2":600.0,"uom3":"","conv3":0.0},"25605":{"uom1":"PZA","uom2":"CAJA","conv2":600.0,"uom3":"CAJA2","conv3":1000.0},"535":{"uom1":"GRS","uom2":"CAJA","conv2":8000.0,"uom3":"BOLSA","conv3":1600.0},"537":{"uom1":"GRS","uom2":"CAJA","conv2":8000.0,"uom3":"BOLSA","conv3":1600.0},"539":{"uom1":"GRS","uom2":"CAJA","conv2":8000.0,"uom3":"BOLSA","conv3":1600.0},"542":{"uom1":"MIL","uom2":"CAJA","conv2":10884.0,"uom3":"BOTE","conv3":907.0},"588":{"uom1":"MIL","uom2":"BOTELL","conv2":1890.0,"uom3":"","conv3":0.0},"590":{"uom1":"GRS","uom2":"CAJA","conv2":6000.0,"uom3":"BOLSA","conv3":1000.0},"591":{"uom1":"GRS","uom2":"CAJA","conv2":6000.0,"uom3":"BOLSA","conv3":1000.0},"593":{"uom1":"ONZ","uom2":"BOTELL","conv2":25.0,"uom3":"","conv3":0.0},"594":{"uom1":"ONZ","uom2":"BOTELL","conv2":25.0,"uom3":"","conv3":0.0},"595":{"uom1":"ONZ","uom2":"BOTELL","conv2":25.0,"uom3":"","conv3":0.0},"596":{"uom1":"ONZ","uom2":"BOTELL","conv2":25.0,"uom3":"","conv3":0.0},"5631":{"uom1":"MIL","uom2":"BOTELL","conv2":1890.0,"uom3":"","conv3":0.0},"6075":{"uom1":"GRS","uom2":"CAJA","conv2":8000.0,"uom3":"BOLSA","conv3":1600.0},"6837":{"uom1":"GRS","uom2":"GARRAF","conv2":13000.0,"uom3":"","conv3":0.0},"7586":{"uom1":"GRS","uom2":"CAJA","conv2":8000.0,"uom3":"BOLSA","conv3":1600.0},"7587":{"uom1":"GRS","uom2":"CAJA","conv2":8000.0,"uom3":"BOLSA","conv3":1600.0},"7588":{"uom1":"GRS","uom2":"CAJA","conv2":8000.0,"uom3":"BOLSA","conv3":1600.0},"10608":{"uom1":"GRS","uom2":"CAJA","conv2":8000.0,"uom3":"BOLSA","conv3":1600.0},"23501":{"uom1":"GRS","uom2":"CAJA","conv2":8000.0,"uom3":"BOLSA","conv3":1600.0},"27335":{"uom1":"GRS","uom2":"CAJA","conv2":8000.0,"uom3":"BOLSA","conv3":1600.0},"27568":{"uom1":"GRS","uom2":"CAJA","conv2":8000.0,"uom3":"BOLSA","conv3":1600.0},"3120":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"5400":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"12516":{"uom1":"PZA","uom2":"CAJA","conv2":30.0,"uom3":"","conv3":0.0},"16835":{"uom1":"REB","uom2":"CAJA","conv2":12.0,"uom3":"","conv3":0.0},"16837":{"uom1":"PZA","uom2":"CAJA","conv2":6.0,"uom3":"","conv3":0.0},"16838":{"uom1":"REB","uom2":"CAJA","conv2":12.0,"uom3":"","conv3":0.0},"9182":{"uom1":"GRS","uom2":"CAJA","conv2":480.0,"uom3":"","conv3":0.0},"603":{"uom1":"ONZ","uom2":"BOTELL","conv2":25.0,"uom3":"","conv3":0.0},"604":{"uom1":"ONZ","uom2":"BOTELL","conv2":25.0,"uom3":"","conv3":0.0},"605":{"uom1":"ONZ","uom2":"BOTELL","conv2":25.0,"uom3":"","conv3":0.0},"606":{"uom1":"ONZ","uom2":"BOTELL","conv2":25.0,"uom3":"","conv3":0.0},"16983":{"uom1":"PZA","uom2":"BOLSA","conv2":50.0,"uom3":"","conv3":0.0},"16986":{"uom1":"PZA","uom2":"BOLSA","conv2":50.0,"uom3":"","conv3":0.0},"25557":{"uom1":"MIL","uom2":"BOTELL","conv2":1000.0,"uom3":"","conv3":0.0},"25558":{"uom1":"GRS","uom2":"CAJA","conv2":1000.0,"uom3":"BOLSA","conv3":500.0},"3823":{"uom1":"GRS","uom2":"CAJA","conv2":2000.0,"uom3":"","conv3":0.0},"194":{"uom1":"PZA","uom2":"PAQUET","conv2":6.0,"uom3":"PAQUE2","conv3":12.0},"230":{"uom1":"LTS","uom2":"BIB","conv2":9.0,"uom3":"BIB2","conv3":19.0},"286":{"uom1":"LTS","uom2":"BIB","conv2":9.0,"uom3":"BIB2","conv3":19.0},"392":{"uom1":"PZA","uom2":"CAJA","conv2":500.0,"uom3":"MANGA","conv3":100.0},"431":{"uom1":"PZA","uom2":"CAJA","conv2":480.0,"uom3":"MANGA","conv3":40.0},"438":{"uom1":"PZA","uom2":"CAJA","conv2":1000.0,"uom3":"MANGA","conv3":100.0},"441":{"uom1":"PZA","uom2":"CAJA","conv2":1000.0,"uom3":"MANGA","conv3":100.0},"443":{"uom1":"PZA","uom2":"CAJA","conv2":500.0,"uom3":"MANGA","conv3":100.0},"467":{"uom1":"LTS","uom2":"BIB","conv2":19.0,"uom3":"","conv3":0.0},"469":{"uom1":"LTS","uom2":"BIB","conv2":19.0,"uom3":"","conv3":0.0},"6493":{"uom1":"LTS","uom2":"BIB","conv2":19.0,"uom3":"","conv3":0.0},"8973":{"uom1":"LTS","uom2":"BIB","conv2":9.0,"uom3":"BIB2","conv3":19.0},"17568":{"uom1":"LTS","uom2":"BIB","conv2":9.0,"uom3":"BIB2","conv3":19.0},"18024":{"uom1":"PZA","uom2":"PAQUET","conv2":6.0,"uom3":"PAQUE2","conv3":12.0},"18025":{"uom1":"PZA","uom2":"PAQUET","conv2":6.0,"uom3":"PAQUE2","conv3":12.0},"18026":{"uom1":"PZA","uom2":"PAQUET","conv2":6.0,"uom3":"PAQUE2","conv3":12.0},"18027":{"uom1":"PZA","uom2":"PAQUET","conv2":12.0,"uom3":"PAQUE2","conv3":24.0},"18028":{"uom1":"PZA","uom2":"PAQUET","conv2":6.0,"uom3":"PAQUE2","conv3":12.0},"18029":{"uom1":"PZA","uom2":"PAQUET","conv2":6.0,"uom3":"PAQUE2","conv3":12.0},"18159":{"uom1":"PZA","uom2":"PAQUET","conv2":6.0,"uom3":"PAQUE2","conv3":12.0},"18526":{"uom1":"PZA","uom2":"PAQUET","conv2":12.0,"uom3":"","conv3":0.0},"21551":{"uom1":"LTS","uom2":"BIB","conv2":5.0,"uom3":"BIB2","conv3":9.0},"21552":{"uom1":"LTS","uom2":"BIB","conv2":5.0,"uom3":"BIB2","conv3":9.0},"23219":{"uom1":"LTS","uom2":"BIB","conv2":9.0,"uom3":"BIB2","conv3":19.0},"26518":{"uom1":"LTS","uom2":"BIB","conv2":19.0,"uom3":"","conv3":0.0},"26538":{"uom1":"LTS","uom2":"BIB","conv2":9.0,"uom3":"BIB2","conv3":19.0},"585":{"uom1":"GRS","uom2":"CUBETA","conv2":6000.0,"uom3":"","conv3":0.0},"3601":{"uom1":"PZA","uom2":"CAJA","conv2":4.0,"uom3":"CAJA2","conv3":6.0},"3603":{"uom1":"PZA","uom2":"CAJA","conv2":6.0,"uom3":"","conv3":0.0},"3604":{"uom1":"PZA","uom2":"CAJA","conv2":4.0,"uom3":"","conv3":0.0},"3605":{"uom1":"PZA","uom2":"CAJA","conv2":6.0,"uom3":"","conv3":0.0},"3606":{"uom1":"PZA","uom2":"CAJA","conv2":4.0,"uom3":"","conv3":0.0},"3607":{"uom1":"PZA","uom2":"CAJA","conv2":1.0,"uom3":"","conv3":0.0},"4102":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"CAJA2","conv3":360.0},"28618":{"uom1":"GRS","uom2":"GRS","conv2":1.0,"uom3":"","conv3":0.0},"301":{"uom1":"GRS","uom2":"CAJA","conv2":3000.0,"uom3":"","conv3":0.0},"304":{"uom1":"GRS","uom2":"CAJA","conv2":4000.0,"uom3":"","conv3":0.0},"340":{"uom1":"GRS","uom2":"CAJA","conv2":4500.0,"uom3":"BOLSA","conv3":500.0},"366":{"uom1":"GRS","uom2":"CAJA","conv2":12500.0,"uom3":"","conv3":0.0},"386":{"uom1":"GRS","uom2":"CAJA","conv2":10000.0,"uom3":"BOLSA","conv3":1000.0},"391":{"uom1":"GRS","uom2":"CAJA","conv2":10000.0,"uom3":"BOLSA","conv3":1000.0},"4081":{"uom1":"GRS","uom2":"CAJA","conv2":5000.0,"uom3":"BOLSA","conv3":500.0},"6575":{"uom1":"GRS","uom2":"CAJA","conv2":9600.0,"uom3":"BOLSA","conv3":1600.0},"11717":{"uom1":"PZA","uom2":"CAJA","conv2":1000.0,"uom3":"MANGA","conv3":100.0},"11718":{"uom1":"PZA","uom2":"CAJA","conv2":1000.0,"uom3":"MANGA","conv3":100.0},"11719":{"uom1":"PZA","uom2":"CAJA","conv2":1000.0,"uom3":"MANGA","conv3":100.0},"23893":{"uom1":"GRS","uom2":"CAJA","conv2":3000.0,"uom3":"","conv3":0.0},"23894":{"uom1":"GRS","uom2":"CAJA","conv2":4000.0,"uom3":"","conv3":0.0},"23900":{"uom1":"GRS","uom2":"CAJA","conv2":5000.0,"uom3":"BOLSA","conv3":500.0},"23901":{"uom1":"GRS","uom2":"CAJA","conv2":2000.0,"uom3":"","conv3":0.0},"23903":{"uom1":"GRS","uom2":"CAJA","conv2":5000.0,"uom3":"BOLSA","conv3":500.0},"26408":{"uom1":"GRS","uom2":"CAJA","conv2":10000.0,"uom3":"BOLSA","conv3":1000.0},"26409":{"uom1":"GRS","uom2":"CAJA","conv2":10896.0,"uom3":"BOLSA","conv3":454.0},"26410":{"uom1":"GRS","uom2":"CAJA","conv2":10000.0,"uom3":"BOLSA","conv3":1000.0},"377":{"uom1":"PZA","uom2":"CAJA","conv2":2000.0,"uom3":"","conv3":0.0},"384":{"uom1":"PZA","uom2":"PAQUET","conv2":8.0,"uom3":"","conv3":0.0},"393":{"uom1":"PZA","uom2":"CAJA","conv2":12.0,"uom3":"PAQUET","conv3":6.0},"2171":{"uom1":"PZA","uom2":"CAJA","conv2":12.0,"uom3":"","conv3":0.0},"2172":{"uom1":"PZA","uom2":"CAJA","conv2":700.0,"uom3":"","conv3":0.0},"27477":{"uom1":"PZA","uom2":"CAJA","conv2":60.0,"uom3":"","conv3":0.0},"1778":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"1782":{"uom1":"PZA","uom2":"CAJA","conv2":25.0,"uom3":"","conv3":0.0},"1783":{"uom1":"PZA","uom2":"CAJA","conv2":25.0,"uom3":"","conv3":0.0},"7272":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"8138":{"uom1":"PZA","uom2":"CAJA","conv2":16.0,"uom3":"","conv3":0.0},"8926":{"uom1":"PZA","uom2":"CAJA","conv2":16.0,"uom3":"","conv3":0.0},"9692":{"uom1":"PZA","uom2":"CAJA","conv2":16.0,"uom3":"","conv3":0.0},"22229":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"23120":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"25899":{"uom1":"PZA","uom2":"CAJA","conv2":25.0,"uom3":"","conv3":0.0},"26156":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"27145":{"uom1":"PZA","uom2":"CAJA","conv2":25.0,"uom3":"","conv3":0.0},"27659":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"289":{"uom1":"ONZ","uom2":"CAJA","conv2":560.0,"uom3":"","conv3":0.0},"412":{"uom1":"PZA","uom2":"CAJA","conv2":600.0,"uom3":"","conv3":0.0},"416":{"uom1":"GRS","uom2":"BLISCH","conv2":120.0,"uom3":"BLISG","conv3":170.0},"428":{"uom1":"GRS","uom2":"CAJA","conv2":3000.0,"uom3":"CAJA2","conv3":3360.0},"2104":{"uom1":"PZA","uom2":"CAJA","conv2":200.0,"uom3":"","conv3":0.0},"293":{"uom1":"PZA","uom2":"CAJA","conv2":600.0,"uom3":"","conv3":0.0},"359":{"uom1":"PZA","uom2":"CAJA","conv2":600.0,"uom3":"","conv3":0.0},"456":{"uom1":"PZA","uom2":"CAJA","conv2":300.0,"uom3":"","conv3":0.0},"457":{"uom1":"LTS","uom2":"BIDON","conv2":15.0,"uom3":"BIDON2","conv3":20.0},"458":{"uom1":"LTS","uom2":"BIDON","conv2":15.0,"uom3":"","conv3":0.0},"461":{"uom1":"GRS","uom2":"CAJA","conv2":9528.0,"uom3":"TETRA","conv3":794.0},"462":{"uom1":"KGS","uom2":"SACO","conv2":22.5,"uom3":"SACO2","conv3":22.68},"464":{"uom1":"KGS","uom2":"CUBETA","conv2":20.0,"uom3":"","conv3":0.0},"5622":{"uom1":"PZA","uom2":"CAJA","conv2":350.0,"uom3":"","conv3":0.0},"11014":{"uom1":"GRS","uom2":"CAJA","conv2":10000.0,"uom3":"BOLSA","conv3":1000.0},"11015":{"uom1":"GRS","uom2":"BOLSA","conv2":200.0,"uom3":"BOLSA2","conv3":600.0},"11661":{"uom1":"PZA","uom2":"CAJA","conv2":500.0,"uom3":"","conv3":0.0},"16228":{"uom1":"PZA","uom2":"CAJA","conv2":500.0,"uom3":"","conv3":0.0},"16267":{"uom1":"GRS","uom2":"CAJA","conv2":4000.0,"uom3":"BOLSA","conv3":1000.0},"22539":{"uom1":"GRS","uom2":"CAJA","conv2":2880.0,"uom3":"BOLSA","conv3":240.0},"25785":{"uom1":"GRS","uom2":"CAJA","conv2":8000.0,"uom3":"BOLSA","conv3":1000.0},"25911":{"uom1":"GRS","uom2":"CAJA","conv2":1900.0,"uom3":"BOLSA","conv3":190.0},"27357":{"uom1":"PZA","uom2":"CAJA","conv2":96.0,"uom3":"","conv3":0.0},"27358":{"uom1":"PZA","uom2":"CAJA","conv2":96.0,"uom3":"","conv3":0.0},"27404":{"uom1":"PZA","uom2":"CAJA","conv2":120.0,"uom3":"PAQUET","conv3":6.0},"26636":{"uom1":"PZA","uom2":"CAJA","conv2":8.0,"uom3":"","conv3":0.0},"26685":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"26686":{"uom1":"PZA","uom2":"CAJA","conv2":8.0,"uom3":"","conv3":0.0},"26847":{"uom1":"PZA","uom2":"CAJA","conv2":18.0,"uom3":"","conv3":0.0},"26848":{"uom1":"PZA","uom2":"CAJA","conv2":40.0,"uom3":"","conv3":0.0},"27071":{"uom1":"PZA","uom2":"CAJA","conv2":30.0,"uom3":"","conv3":0.0},"27079":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"27151":{"uom1":"PZA","uom2":"CAJA","conv2":18.0,"uom3":"","conv3":0.0},"27153":{"uom1":"PZA","uom2":"CAJA","conv2":12.0,"uom3":"","conv3":0.0},"27188":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"27281":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"27282":{"uom1":"PZA","uom2":"CAJA","conv2":50.0,"uom3":"","conv3":0.0},"27322":{"uom1":"PZA","uom2":"CAJA","conv2":230.0,"uom3":"","conv3":0.0},"27330":{"uom1":"PZA","uom2":"CAJA","conv2":40.0,"uom3":"","conv3":0.0},"27331":{"uom1":"PZA","uom2":"CAJA","conv2":30.0,"uom3":"","conv3":0.0},"27384":{"uom1":"PZA","uom2":"CAJA","conv2":12.0,"uom3":"","conv3":0.0},"27415":{"uom1":"PZA","uom2":"CAJA","conv2":48.0,"uom3":"","conv3":0.0},"27697":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28060":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28104":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28105":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28157":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28290":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28292":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28293":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28315":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28316":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28317":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28318":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28319":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28320":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28322":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28411":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28412":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28479":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28480":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"28481":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"1740":{"uom1":"PZA","uom2":"CAJA","conv2":20.0,"uom3":"CAJA2","conv3":36.0},"1741":{"uom1":"PZA","uom2":"CAJA","conv2":20.0,"uom3":"CAJA2","conv3":36.0},"28540":{"uom1":"PZA","uom2":"CAJA","conv2":27.0,"uom3":"","conv3":0.0},"202":{"uom1":"PZA","uom2":"CAJA","conv2":32.0,"uom3":"","conv3":0.0},"216":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"220":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"224":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"234":{"uom1":"PZA","uom2":"CAJA","conv2":48.0,"uom3":"","conv3":0.0},"241":{"uom1":"PZA","uom2":"CAJA","conv2":48.0,"uom3":"PAQUET","conv3":4.0},"6241":{"uom1":"PZA","uom2":"PAQUET","conv2":24.0,"uom3":"","conv3":0.0},"13122":{"uom1":"PZA","uom2":"PAQUET","conv2":12.0,"uom3":"","conv3":0.0},"13125":{"uom1":"PZA","uom2":"CAJA","conv2":120.0,"uom3":"PAQUET","conv3":6.0},"13126":{"uom1":"PZA","uom2":"CAJA","conv2":120.0,"uom3":"PAQUET","conv3":6.0},"17176":{"uom1":"PZA","uom2":"CAJA","conv2":12.0,"uom3":"","conv3":0.0},"19648":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"21498":{"uom1":"PZA","uom2":"CAJA","conv2":12.0,"uom3":"","conv3":0.0},"21742":{"uom1":"PZA","uom2":"CAJA","conv2":12.0,"uom3":"","conv3":0.0},"25003":{"uom1":"PZA","uom2":"CAJA","conv2":12.0,"uom3":"","conv3":0.0},"25405":{"uom1":"PZA","uom2":"CAJA","conv2":15.0,"uom3":"","conv3":0.0},"25406":{"uom1":"PZA","uom2":"CAJA","conv2":15.0,"uom3":"","conv3":0.0},"25407":{"uom1":"PZA","uom2":"CAJA","conv2":15.0,"uom3":"","conv3":0.0},"26134":{"uom1":"PZA","uom2":"CAJA","conv2":12.0,"uom3":"","conv3":0.0},"26800":{"uom1":"GRS","uom2":"CAJA","conv2":3420.0,"uom3":"PAQUET","conv3":76.0},"27323":{"uom1":"PZA","uom2":"CAJA","conv2":12.0,"uom3":"","conv3":0.0},"28740":{"uom1":"PZA","uom2":"CAJA","conv2":24.0,"uom3":"","conv3":0.0},"26364":{"uom1":"GRS","uom2":"CAJA","conv2":10000.0,"uom3":"BOLSA","conv3":1000.0},"1557":{"uom1":"GRS","uom2":"CAJA","conv2":2000.0,"uom3":"BOLSA","conv3":1000.0},"1583":{"uom1":"PZA","uom2":"CAJA","conv2":360.0,"uom3":"","conv3":0.0},"4621":{"uom1":"PZA","uom2":"CAJA","conv2":120.0,"uom3":"","conv3":0.0},"6914":{"uom1":"PZA","uom2":"CAJA","conv2":360.0,"uom3":"","conv3":0.0},"1576":{"uom1":"GRS","uom2":"CAJA","conv2":11300.0,"uom3":"","conv3":0.0},"1577":{"uom1":"GRS","uom2":"CAJA","conv2":2394.0,"uom3":"PAQUET","conv3":114.0},"1579":{"uom1":"GRS","uom2":"CUBETA","conv2":5000.0,"uom3":"","conv3":0.0},"1580":{"uom1":"GRS","uom2":"CUBETA","conv2":5000.0,"uom3":"","conv3":0.0},"1581":{"uom1":"MIL","uom2":"CAJA","conv2":18000.0,"uom3":"BOLSA","conv3":2000.0},"1582":{"uom1":"MIL","uom2":"CAJA","conv2":18000.0,"uom3":"BOLSA","conv3":2000.0},"6049":{"uom1":"GRS","uom2":"CAJA","conv2":2000.0,"uom3":"BOLSA","conv3":1000.0},"8360":{"uom1":"GRS","uom2":"BOTELL","conv2":3400.0,"uom3":"","conv3":0.0},"7903":{"uom1":"PZA","uom2":"CAJA","conv2":1000.0,"uom3":"","conv3":0.0},"27121":{"uom1":"PZA","uom2":"CAJA","conv2":1000.0,"uom3":"","conv3":0.0},"1585":{"uom1":"PZA","uom2":"CAJA","conv2":1000.0,"uom3":"","conv3":0.0},"8130":{"uom1":"GRS","uom2":"CAJA","conv2":10000.0,"uom3":"BOLSA","conv3":2500.0},"1584":{"uom1":"PZA","uom2":"CAJA","conv2":1000.0,"uom3":"","conv3":0.0},"238":{"uom1":"LTS","uom2":"BIB","conv2":9.0,"uom3":"BIB2","conv3":19.0},"455":{"uom1":"LTS","uom2":"BIB","conv2":9.0,"uom3":"BIB2","conv3":19.0},"25917":{"uom1":"PZA","uom2":"PAQUET","conv2":12.0,"uom3":"","conv3":0.0},"16852":{"uom1":"PZA","uom2":"CAJA","conv2":16.0,"uom3":"","conv3":0.0},"24140":{"uom1":"PZA","uom2":"CAJA","conv2":25.0,"uom3":"","conv3":0.0},"25097":{"uom1":"PZA","uom2":"CAJA","conv2":16.0,"uom3":"","conv3":0.0},"25727":{"uom1":"PZA","uom2":"CAJA","conv2":30.0,"uom3":"","conv3":0.0},"25730":{"uom1":"PZA","uom2":"CAJA","conv2":12.0,"uom3":"","conv3":0.0},"25949":{"uom1":"PZA","uom2":"CAJA","conv2":12.0,"uom3":"","conv3":0.0},"26132":{"uom1":"PZA","uom2":"CAJA","conv2":100.0,"uom3":"","conv3":0.0},"1003":{"uom1":"PZA","uom2":"BOTELL","conv2":22.0,"uom3":"","conv3":0.0},"18226":{"uom1":"PZA","uom2":"PAQUET","conv2":12.0,"uom3":"PAQUE2","conv3":24.0},"25845":{"uom1":"PZA","uom2":"PAQUET","conv2":6.0,"uom3":"","conv3":0.0}};
+
+function getPresentacion(codigo){
+  return PRESENTACIONES[String(codigo)] || null;
+}
+
+function presentacionHTML(codigo, teorico, p){
+  const uomLabel = name => ({
+    'CAJA':'Cajas','PAQUETE':'Paquetes','PAQUET':'Paquetes','BOLSA':'Bolsas',
+    'BOTELL':'Botellas','LATA':'Latas','MANGA':'Mangas','COSTAL':'Costales',
+    'BOTE':'Botes','GALON':'Galones','BIDON':'Bidones','ROLLO':'Rollos',
+    'KG':'Kg','GRS':'Gramos','LITRO':'Litros','ONZ':'Onzas',
+  }[name] || name;
+
+  const rows = [];
+  // UOM2 (presentacion principal)
+  if(p.uom2 && p.conv2 > 0){
+    rows.push({ label: uomLabel(p.uom2), conv: p.conv2, uom: p.uom2 });
+  }
+  // UOM3 (presentacion secundaria)
+  if(p.uom3 && p.conv3 > 0){
+    rows.push({ label: uomLabel(p.uom3), conv: p.conv3, uom: p.uom3 });
+  }
+
+  const rowsHTML = rows.map((r,idx) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="flex:1">
+        <div style="font-size:12px;color:var(--text);font-weight:700">${r.label}</div>
+        <div style="font-size:10px;color:var(--muted)">× ${r.conv} ${p.uom1}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="cnt-btn" style="width:34px;height:34px;font-size:18px;flex-shrink:0"
+          onclick="pAdj('${codigo}',${teorico},${idx},-1)">−</button>
+        <input id="pi-${codigo}-${idx}" type="number" inputmode="numeric" min="0" value="0"
+          style="width:64px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 4px;color:var(--text);font-family:'Space Mono',monospace;font-size:18px;font-weight:700;text-align:center;outline:none"
+          oninput="pCalc('${codigo}',${teorico})">
+        <button class="cnt-btn add" style="width:34px;height:34px;font-size:18px;flex-shrink:0"
+          onclick="pAdj('${codigo}',${teorico},${idx},1)">+</button>
+      </div>
+    </div>`).join('');
+
+  return `<div style="background:rgba(64,144,255,.07);border:1px solid rgba(64,144,255,.3);border-radius:10px;padding:12px">
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:var(--blue);margin-bottom:10px">📦 PRESENTACIONES</div>
+    ${rowsHTML}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="flex:1">
+        <div style="font-size:12px;color:var(--text);font-weight:700">Sueltos</div>
+        <div style="font-size:10px;color:var(--muted)">× 1 ${p.uom1}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="cnt-btn" style="width:34px;height:34px;font-size:18px;flex-shrink:0"
+          onclick="pAdj('${codigo}',${teorico},-1,-1)">−</button>
+        <input id="pi-${codigo}-s" type="number" inputmode="decimal" min="0" value=""
+          style="width:64px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 4px;color:var(--text);font-family:'Space Mono',monospace;font-size:18px;font-weight:700;text-align:center;outline:none"
+          placeholder="0" oninput="pCalc('${codigo}',${teorico})">
+        <button class="cnt-btn add" style="width:34px;height:34px;font-size:18px;flex-shrink:0"
+          onclick="pAdj('${codigo}',${teorico},-1,1)">+</button>
+      </div>
+    </div>
+    <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center">
+      <div style="font-size:9px;color:var(--muted);font-weight:700;letter-spacing:1px">TOTAL ${p.uom1.toUpperCase()}</div>
+      <div id="pr-${codigo}" style="font-size:22px;font-weight:800;font-family:'Space Mono',monospace;color:var(--muted)">0</div>
+    </div>
+  </div>`;
+}
+
+function pAdj(codigo, teorico, idx, delta){
+  const el = idx === -1
+    ? document.getElementById(`pi-${codigo}-s`)
+    : document.getElementById(`pi-${codigo}-${idx}`);
+  if(el){ el.value = Math.max(0, Number(el.value||0) + delta); pCalc(codigo, teorico); }
+}
+
+function pCalc(codigo, teorico){
+  const p = getPresentacion(codigo);
+  if(!p) return;
+  const convs = [];
+  if(p.uom2 && p.conv2 > 0) convs.push(p.conv2);
+  if(p.uom3 && p.conv3 > 0) convs.push(p.conv3);
+  let total = 0;
+  convs.forEach((conv, idx) => {
+    const val = Number(document.getElementById(`pi-${codigo}-${idx}`)?.value || 0);
+    total += val * conv;
+  });
+  const sueltos = Number(document.getElementById(`pi-${codigo}-s`)?.value || 0);
+  total += sueltos;
+  const el = document.getElementById(`pr-${codigo}`);
+  if(el){ el.textContent = total % 1 === 0 ? total.toLocaleString('es-MX') : total.toLocaleString('es-MX',{maximumFractionDigits:2}); el.style.color = total > 0 ? 'var(--gold)' : 'var(--muted)'; }
+  setCount(codigo, teorico, total > 0 ? total : '');
+}
+
 
 init();
 // Auto-sync cada 30 segundos
