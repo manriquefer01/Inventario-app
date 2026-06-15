@@ -1224,69 +1224,53 @@ function getPresentacion(codigo){
 }
 
 function presentacionHTML(codigo, teorico, p){
-  const uomLabel = name => ({
-    'CAJA':'Cajas','PAQUETE':'Paquetes','PAQUET':'Paquetes','BOLSA':'Bolsas',
-    'BOTELL':'Botellas','LATA':'Latas','MANGA':'Mangas','COSTAL':'Costales',
-    'BOTE':'Botes','GALON':'Galones','BIDON':'Bidones','ROLLO':'Rollos',
-    'KG':'Kg','GRS':'Gramos','LITRO':'Litros','ONZ':'Onzas',
-  }[name] || name;
-
+  const uomLabel = function(name){
+    const map = {'CAJA':'Cajas','PAQUETE':'Paquetes','PAQUET':'Paquetes','BOLSA':'Bolsas',
+      'BOTELL':'Botellas','LATA':'Latas','MANGA':'Mangas','COSTAL':'Costales',
+      'BOTE':'Botes','GALON':'Galones','BIDON':'Bidones','ROLLO':'Rollos',
+      'KG':'Kg','GRS':'Gramos','LITRO':'Litros','ONZ':'Onzas'};
+    return map[name] || name;
+  };
   const rows = [];
-  // UOM2 (presentacion principal)
-  if(p.uom2 && p.conv2 > 0){
-    rows.push({ label: uomLabel(p.uom2), conv: p.conv2, uom: p.uom2 });
-  }
-  // UOM3 (presentacion secundaria)
-  if(p.uom3 && p.conv3 > 0){
-    rows.push({ label: uomLabel(p.uom3), conv: p.conv3, uom: p.uom3 });
-  }
+  if(p.uom2 && p.conv2 > 0) rows.push({ label: uomLabel(p.uom2), conv: p.conv2 });
+  if(p.uom3 && p.conv3 > 0) rows.push({ label: uomLabel(p.uom3), conv: p.conv3 });
 
-  const rowsHTML = rows.map((r,idx) => `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div style="flex:1">
-        <div style="font-size:12px;color:var(--text);font-weight:700">${r.label}</div>
-        <div style="font-size:10px;color:var(--muted)">× ${r.conv} ${p.uom1}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <button class="cnt-btn" style="width:34px;height:34px;font-size:18px;flex-shrink:0"
-          onclick="pAdj('${codigo}',${teorico},${idx},-1)">−</button>
-        <input id="pi-${codigo}-${idx}" type="number" inputmode="numeric" min="0" value="0"
-          style="width:64px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 4px;color:var(--text);font-family:'Space Mono',monospace;font-size:18px;font-weight:700;text-align:center;outline:none"
-          oninput="pCalc('${codigo}',${teorico})">
-        <button class="cnt-btn add" style="width:34px;height:34px;font-size:18px;flex-shrink:0"
-          onclick="pAdj('${codigo}',${teorico},${idx},1)">+</button>
-      </div>
-    </div>`).join('');
+  let rowsHTML = '';
+  rows.forEach(function(r, idx){
+    rowsHTML += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+      + '<div style="flex:1"><div style="font-size:12px;color:var(--text);font-weight:700">' + r.label + '</div>'
+      + '<div style="font-size:10px;color:var(--muted)">× ' + r.conv + ' ' + p.uom1 + '</div></div>'
+      + '<div style="display:flex;align-items:center;gap:6px">'
+      + '<button class="cnt-btn" style="width:34px;height:34px;font-size:18px;flex-shrink:0" onclick="pAdj(\'' + codigo + '\',' + teorico + ',' + idx + ',-1)">−</button>'
+      + '<input id="pi-' + codigo + '-' + idx + '" type="number" inputmode="numeric" min="0" value="0"'
+      + ' style="width:64px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 4px;color:var(--text);font-family:\'Space Mono\',monospace;font-size:18px;font-weight:700;text-align:center;outline:none"'
+      + ' oninput="pCalc(\'' + codigo + '\',' + teorico + ')">'
+      + '<button class="cnt-btn add" style="width:34px;height:34px;font-size:18px;flex-shrink:0" onclick="pAdj(\'' + codigo + '\',' + teorico + ',' + idx + ',1)">+</button>'
+      + '</div></div>';
+  });
 
-  return `<div style="background:rgba(64,144,255,.07);border:1px solid rgba(64,144,255,.3);border-radius:10px;padding:12px">
-    <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:var(--blue);margin-bottom:10px">📦 PRESENTACIONES</div>
-    ${rowsHTML}
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div style="flex:1">
-        <div style="font-size:12px;color:var(--text);font-weight:700">Sueltos</div>
-        <div style="font-size:10px;color:var(--muted)">× 1 ${p.uom1}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <button class="cnt-btn" style="width:34px;height:34px;font-size:18px;flex-shrink:0"
-          onclick="pAdj('${codigo}',${teorico},-1,-1)">−</button>
-        <input id="pi-${codigo}-s" type="number" inputmode="decimal" min="0" value=""
-          style="width:64px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 4px;color:var(--text);font-family:'Space Mono',monospace;font-size:18px;font-weight:700;text-align:center;outline:none"
-          placeholder="0" oninput="pCalc('${codigo}',${teorico})">
-        <button class="cnt-btn add" style="width:34px;height:34px;font-size:18px;flex-shrink:0"
-          onclick="pAdj('${codigo}',${teorico},-1,1)">+</button>
-      </div>
-    </div>
-    <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center">
-      <div style="font-size:9px;color:var(--muted);font-weight:700;letter-spacing:1px">TOTAL ${p.uom1.toUpperCase()}</div>
-      <div id="pr-${codigo}" style="font-size:22px;font-weight:800;font-family:'Space Mono',monospace;color:var(--muted)">0</div>
-    </div>
-  </div>`;
+  return '<div style="background:rgba(64,144,255,.07);border:1px solid rgba(64,144,255,.3);border-radius:10px;padding:12px">'
+    + '<div style="font-size:10px;font-weight:700;letter-spacing:2px;color:var(--blue);margin-bottom:10px">📦 PRESENTACIONES</div>'
+    + rowsHTML
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+    + '<div style="flex:1"><div style="font-size:12px;color:var(--text);font-weight:700">Sueltos</div>'
+    + '<div style="font-size:10px;color:var(--muted)">× 1 ' + p.uom1 + '</div></div>'
+    + '<div style="display:flex;align-items:center;gap:6px">'
+    + '<button class="cnt-btn" style="width:34px;height:34px;font-size:18px;flex-shrink:0" onclick="pAdj(\'' + codigo + '\',' + teorico + ',-1,-1)">−</button>'
+    + '<input id="pi-' + codigo + '-s" type="number" inputmode="decimal" min="0" value="" placeholder="0"'
+    + ' style="width:64px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 4px;color:var(--text);font-family:\'Space Mono\',monospace;font-size:18px;font-weight:700;text-align:center;outline:none"'
+    + ' oninput="pCalc(\'' + codigo + '\',' + teorico + ')">'
+    + '<button class="cnt-btn add" style="width:34px;height:34px;font-size:18px;flex-shrink:0" onclick="pAdj(\'' + codigo + '\',' + teorico + ',-1,1)">+</button>'
+    + '</div></div>'
+    + '<div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center">'
+    + '<div style="font-size:9px;color:var(--muted);font-weight:700;letter-spacing:1px">TOTAL ' + p.uom1 + '</div>'
+    + '<div id="pr-' + codigo + '" style="font-size:22px;font-weight:800;font-family:\'Space Mono\',monospace;color:var(--muted)">0</div>'
+    + '</div></div>';
 }
 
 function pAdj(codigo, teorico, idx, delta){
-  const el = idx === -1
-    ? document.getElementById(`pi-${codigo}-s`)
-    : document.getElementById(`pi-${codigo}-${idx}`);
+  const elId = idx === -1 ? 'pi-'+codigo+'-s' : 'pi-'+codigo+'-'+idx;
+  const el = document.getElementById(elId);
   if(el){ el.value = Math.max(0, Number(el.value||0) + delta); pCalc(codigo, teorico); }
 }
 
@@ -1297,15 +1281,13 @@ function pCalc(codigo, teorico){
   if(p.uom2 && p.conv2 > 0) convs.push(p.conv2);
   if(p.uom3 && p.conv3 > 0) convs.push(p.conv3);
   let total = 0;
-  convs.forEach((conv, idx) => {
-    const val = Number(document.getElementById(`pi-${codigo}-${idx}`)?.value || 0);
-    total += val * conv;
+  convs.forEach(function(conv, idx){
+    total += Number(document.getElementById('pi-'+codigo+'-'+idx)?.value||0) * conv;
   });
-  const sueltos = Number(document.getElementById(`pi-${codigo}-s`)?.value || 0);
-  total += sueltos;
-  const el = document.getElementById(`pr-${codigo}`);
-  if(el){ el.textContent = total % 1 === 0 ? total.toLocaleString('es-MX') : total.toLocaleString('es-MX',{maximumFractionDigits:2}); el.style.color = total > 0 ? 'var(--gold)' : 'var(--muted)'; }
-  setCount(codigo, teorico, total > 0 ? total : '');
+  total += Number(document.getElementById('pi-'+codigo+'-s')?.value||0);
+  const el = document.getElementById('pr-'+codigo);
+  if(el){ el.textContent = total%1===0?total.toLocaleString('es-MX'):total.toLocaleString('es-MX',{maximumFractionDigits:2}); el.style.color=total>0?'var(--gold)':'var(--muted)'; }
+  setCount(codigo, teorico, total>0?total:'');
 }
 
 
